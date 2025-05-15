@@ -1,34 +1,24 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
-using System;
+using placing_block.src.Models;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace placing_block.src
 {
     public class ExcelReader
     {
-        public List<BlockDataModel> ReadInputData()
+        public List<BlockDataModel> ReadInputData(string coordPathFile)
         {
-            string coordPathFile = "C:\\Projects\\Bundesverwaltungsgericht\\coord_UG_test.xlsx";
+            //string coordPathFile = "C:\\Projects\\Bundesverwaltungsgericht\\coord_UG_test.xlsx";
             List<BlockDataModel> blockData = new List<BlockDataModel>();
 
             using (SpreadsheetDocument doc = SpreadsheetDocument.Open(coordPathFile, true))
             {
-                //WorkbookPart workbookPart = doc.WorkbookPart;
-                //SharedStringTablePart sstpart = workbookPart.GetPartsOfType<SharedStringTablePart>().First();
-                //SharedStringTable sst = sstpart.SharedStringTable;
-
-                //WorksheetPart worksheetPart = workbookPart.WorksheetParts.First();
-                //Worksheet sheet = worksheetPart.Worksheet;
-
-
-                //var cells = sheet.Descendants<Cell>();
-                //var rows = sheet.Descendants<Row>(); 
-
                 WorkbookPart workbookPart = doc.WorkbookPart;
                 var sheet = workbookPart.Workbook.Descendants<Sheet>()
-                                                    .First(s => s.Name == "UG");
+                                                    .First(s => s.Name == "Technische Anlage");
 
                 WorksheetPart worksheetPart = workbookPart.GetPartById(sheet.Id) as WorksheetPart;
                 var rows = worksheetPart.Worksheet.GetFirstChild<SheetData>()
@@ -57,19 +47,42 @@ namespace placing_block.src
                         switch (col)
                         {
                             case "A":
-                                string point = cell.CellValue.InnerText;
-                                if (point != "" || point != null)
-                                    blockRecord.PunktNum = point;
+                                string taId = cell.CellValue.InnerText;
+                                if (taId != "" || taId != null)
+                                    blockRecord.TAId = taId;
                                 break;
 
                             case "B":
-                                double xCoord = double.Parse(cell.CellValue.Text);
-                                blockRecord.X = xCoord;
+                                string taDesignasion = cell.CellValue.InnerText;
+                                blockRecord.TABezeichnung = taDesignasion;
                                 break;
 
                             case "C":
-                                double yCoord = double.Parse(cell.CellValue.Text);
-                                blockRecord.Y = yCoord;
+                                string taGroup = cell.CellValue.InnerText;
+                                blockRecord.TAGruppe = taGroup;
+                                break;
+
+                            case "E":
+                                string pointNum = cell.CellValue.InnerText;
+                                blockRecord.PunktNum = pointNum;
+                                break;
+
+                            case "I":
+                                string rawXCoord = cell.CellValue.Text;
+                                if (rawXCoord != "-1" && rawXCoord != null)
+                                {
+                                    double xCoord = double.Parse(rawXCoord, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+                                    blockRecord.X = xCoord;
+                                }
+                                break;
+
+                            case "J":
+                                string rawYCoord = cell.CellValue.Text;
+                                if (rawYCoord != "-1" && rawYCoord != null)
+                                {
+                                    double yCoord = double.Parse(rawYCoord, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+                                    blockRecord.Y = yCoord;
+                                }
                                 break;
                         }
                         //}
@@ -78,61 +91,8 @@ namespace placing_block.src
                     blockData.Add(blockRecord);
                 }
             }
-
-            foreach (var blData in blockData)
-            {
-                Console.WriteLine($"Point Num: {blData.PunktNum}\tX_Coord: {blData.X}\tY_Coord: {blData.Y}");
-            }
             return blockData;
         }
-
-        //private IEnumerable<Row> GetDataRows(string coordPathFile, string sheetName)
-        //{
-        //    using (SpreadsheetDocument doc = SpreadsheetDocument.Open(coordPathFile, true))
-        //    {
-        //        //WorkbookPart workbookPart = doc.WorkbookPart;
-        //        //SharedStringTablePart sstpart = workbookPart.GetPartsOfType<SharedStringTablePart>().First();
-        //        //SharedStringTable sst = sstpart.SharedStringTable;
-
-        //        //WorksheetPart worksheetPart = workbookPart.WorksheetParts.First();
-        //        //Worksheet sheet = worksheetPart.Worksheet;
-
-
-        //        //var cells = sheet.Descendants<Cell>();
-        //        //var rows = sheet.Descendants<Row>(); 
-
-        //        WorkbookPart workbookPart = doc.WorkbookPart;
-        //        var sheet = workbookPart.Workbook.Descendants<Sheet>()
-        //                                            .First(s => s.Name == sheetName);
-
-        //        WorksheetPart worksheetPart = workbookPart.GetPartById(sheet.Id) as WorksheetPart;
-        //        var rows = worksheetPart.Worksheet.GetFirstChild<SheetData>()
-        //                                            .Elements<Row>();
-        //        var dataRows = rows.Skip(1);
-        //        return dataRows;
-        //    }
-        //}
-
-        //private static string GetCellValue(Cell cell, WorkbookPart wbPart)
-        //{
-        //    if (cell.CellValue == null)
-        //        return string.Empty;
-
-        //    string value = cell.CellValue.InnerText;
-
-        //    // Shared String? Dann in der SharedStringTable nachschlagen
-        //    if (cell.DataType != null && cell.DataType.Value == CellValues.SharedString)
-        //    {
-        //        var sst = wbPart.SharedStringTablePart?
-        //                     .SharedStringTable
-        //                     .Elements<SharedStringItem>()
-        //                     .ToList();
-        //        if (sst != null && int.TryParse(value, out int idx) && idx < sst.Count)
-        //            return sst[idx].InnerText;
-        //    }
-
-        //    return value;
-        //}
 
         private static string GetColumnName(string cellReference)
         {
@@ -142,3 +102,63 @@ namespace placing_block.src
         }
     }
 }
+
+//WorkbookPart workbookPart = doc.WorkbookPart;
+//SharedStringTablePart sstpart = workbookPart.GetPartsOfType<SharedStringTablePart>().First();
+//SharedStringTable sst = sstpart.SharedStringTable;
+
+//WorksheetPart worksheetPart = workbookPart.WorksheetParts.First();
+//Worksheet sheet = worksheetPart.Worksheet;
+
+
+//var cells = sheet.Descendants<Cell>();
+//var rows = sheet.Descendants<Row>(); 
+
+
+//private IEnumerable<Row> GetDataRows(string coordPathFile, string sheetName)
+//{
+//    using (SpreadsheetDocument doc = SpreadsheetDocument.Open(coordPathFile, true))
+//    {
+//        //WorkbookPart workbookPart = doc.WorkbookPart;
+//        //SharedStringTablePart sstpart = workbookPart.GetPartsOfType<SharedStringTablePart>().First();
+//        //SharedStringTable sst = sstpart.SharedStringTable;
+
+//        //WorksheetPart worksheetPart = workbookPart.WorksheetParts.First();
+//        //Worksheet sheet = worksheetPart.Worksheet;
+
+
+//        //var cells = sheet.Descendants<Cell>();
+//        //var rows = sheet.Descendants<Row>(); 
+
+//        WorkbookPart workbookPart = doc.WorkbookPart;
+//        var sheet = workbookPart.Workbook.Descendants<Sheet>()
+//                                            .First(s => s.Name == sheetName);
+
+//        WorksheetPart worksheetPart = workbookPart.GetPartById(sheet.Id) as WorksheetPart;
+//        var rows = worksheetPart.Worksheet.GetFirstChild<SheetData>()
+//                                            .Elements<Row>();
+//        var dataRows = rows.Skip(1);
+//        return dataRows;
+//    }
+//}
+
+//private static string GetCellValue(Cell cell, WorkbookPart wbPart)
+//{
+//    if (cell.CellValue == null)
+//        return string.Empty;
+
+//    string value = cell.CellValue.InnerText;
+
+//    // Shared String? Dann in der SharedStringTable nachschlagen
+//    if (cell.DataType != null && cell.DataType.Value == CellValues.SharedString)
+//    {
+//        var sst = wbPart.SharedStringTablePart?
+//                     .SharedStringTable
+//                     .Elements<SharedStringItem>()
+//                     .ToList();
+//        if (sst != null && int.TryParse(value, out int idx) && idx < sst.Count)
+//            return sst[idx].InnerText;
+//    }
+
+//    return value;
+//}

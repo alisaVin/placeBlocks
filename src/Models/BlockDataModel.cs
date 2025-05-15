@@ -1,9 +1,12 @@
-﻿namespace placing_block.src
+﻿namespace placing_block.src.Models
 {
     public class BlockDataModel
     {
-        public string PunktNum { get; set; }
         public double X { get; set; }
         public double Y { get; set; }
+        public string PunktNum { get; set; }
+        public string TAId { get; set; }
+        public string TABezeichnung { get; set; }
+        public string TAGruppe { get; set; }
     }
 }

@@ -129,9 +129,9 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="src\Commands\AcadUtils.cs" />
-    <Compile Include="src\Models\BlockDataModel.cs" />
     <Compile Include="src\Commands\Commands.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\Models\BlockDataModel.cs" />
     <Compile Include="src\ViewModels\ExcelReader.cs" />
     <Compile Include="src\Views\FormDialog.cs">
       <SubType>Form</SubType>

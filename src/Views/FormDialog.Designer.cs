@@ -91,6 +91,7 @@
             this.insertBtn.TabIndex = 5;
             this.insertBtn.Text = "Einfügen";
             this.insertBtn.UseVisualStyleBackColor = true;
+            this.insertBtn.Click += new System.EventHandler(this.insertBtn_Click);
             // 
             // richTextBox
             // 

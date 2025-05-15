@@ -20,12 +20,11 @@ namespace placing_block
         Reporter _reporter;
 
         [CommandMethod("PLACEBLOCK", CommandFlags.Session)]
-        //public void Demo()
-        //{
-        //    FormDialog formDlg = new FormDialog { TopMost = false };
-        //    formDlg.Show();
-        //}
-
+        public void Demo()
+        {
+            FormDialog formDlg = new FormDialog { TopMost = false };
+            formDlg.Show();
+        }
 
         //public void PlaceBlocks()
         public void PlaceBlocks(string blockPath, string coordPath, object sender, DoWorkEventArgs e)
@@ -44,60 +43,58 @@ namespace placing_block
             var targetDoc = dm.CurrentDocument;
             var targetDb = dm.MdiActiveDocument.Database;
             var ed = dm.MdiActiveDocument.Editor;
-            //Input Feld ///////////////
-            //string blockPath = "C:\\Projects\\Bundesverwaltungsgericht\\placing_block\\Blöcke-techn Anlagen\\FSR.dwg";
+
             string blockName = "FSR";
 
             using (targetDoc.LockDocument(DocumentLockMode.Write, "PLACEBLOCK", "PLACEBLOCK", true))
             {
-                var blockPoints = exReader.ReadInputData();
+                var blockData = exReader.ReadInputData(coordPath);
 
                 try
-                {
+                {  //Exception repeted DWG readed
                     Invoker.Invoke(() =>
                     {
-                        //mal fragen, ob man DWG-Datei öffnen soll oder nicht (bzw. ohne Öffnung, wie bei copy_file_async)
-
-                        Database sourceDb = AcadUtils.OpenDb(blockPath.StringResult, _reporter);
+                        Database sourceDb = AcadUtils.OpenDb(blockPath, _reporter);
                         using (sourceDb)
                         {
-                            sourceDb.ReadDwgFile(blockPath, FileOpenMode.OpenForReadAndReadShare, true, string.Empty);
+                            //sourceDb.ReadDwgFile(blockPath, FileOpenMode.OpenForReadAndReadShare, true, string.Empty);
                             if (sourceDb == null) return;
                             //Input Feld (block name) ///////////////
                             var blockDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
                             // Reporter ''''''''''''''''
                             if (blockDefId == null)
                             {
+                                _reporter.WriteText("The block doesn't exist in this drawing");
                                 ed.WriteMessage("The block doesn't exist in this drawing");
                                 return;
                             }
 
                             using (Transaction tr = targetDb.TransactionManager.StartTransaction())
                             {
+                                #region copy block into dwg
                                 var bt = tr.GetObject(targetDb.BlockTableId, OpenMode.ForRead) as BlockTable;
                                 var ms = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite) as BlockTableRecord;
                                 var blIds = new ObjectIdCollection();
 
                                 if (blockDefId != null)
                                     blIds.Add(blockDefId);
-
                                 var idMapping = new IdMapping();
                                 sourceDb.WblockCloneObjects(blIds, targetDb.BlockTableId, idMapping, DuplicateRecordCloning.Replace, false);
 
                                 //reporter ####################################
+
                                 ed.WriteMessage($"\nCopied {blIds.Count.ToString()} block definitions from {blockPath} to the current drawing.");
+                                #endregion
 
+                                #region set attributes to copied blocks
                                 List<Point3d> insertPoints = new List<Point3d>(); //Einfhügepunkt - Zentrum
-
-                                foreach (var blPoint in blockPoints)
+                                foreach (var blPoint in blockData)
                                 {
                                     insertPoints.Add(new Point3d(blPoint.X, blPoint.Y, 0));
                                 }
 
-
                                 var blBtr = AcadUtils.GetBlockDef(targetDb, blockName);
                                 if (blBtr.IsNull) return;
-
                                 for (int i = 0; i < insertPoints.Count; i++)
                                 {
                                     var newBr = new BlockReference(insertPoints[i], blBtr);
@@ -122,8 +119,9 @@ namespace placing_block
                                                     using (var attrRef = new AttributeReference())
                                                     {
                                                         attrRef.SetAttributeFromBlock(ad, newBr.BlockTransform);
+
                                                         attrRef.Tag = "Punktkoordinaten";
-                                                        attrRef.TextString = $"{blockPoints[i].X}, {blockPoints[i].Y}";
+                                                        attrRef.TextString = $"{blockData[i].X}, {blockData[i].Y}";
                                                         newBr.AttributeCollection.AppendAttribute(attrRef);
                                                         tr.AddNewlyCreatedDBObject(attrRef, true);
                                                     }
@@ -133,8 +131,9 @@ namespace placing_block
                                     }
                                 }
 
-                                //SwapBlockIds - soll schauen, wie man die Ids von FAMOS zu den Blöcken zuweist
+                                #endregion
 
+                                //SwapBlockIds - soll schauen, wie man die Ids von FAMOS zu den Blöcken zuweist
                                 ms.Dispose();
                                 tr.Commit();
                             }
@@ -157,29 +156,22 @@ namespace placing_block
             {
                 string sAppName = "PlacingBlock";
 
-                // Get the AutoCAD Applications key
                 string sProdKey = HostApplicationServices.Current.UserRegistryProductRootKey; //"Software\\Autodesk\\AutoCAD\\R24.1\\ACAD-5101:407"	
                 Microsoft.Win32.RegistryKey regAcadProdKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(sProdKey);
                 Microsoft.Win32.RegistryKey regAcadAppKey = regAcadProdKey.OpenSubKey("Applications", true); //{HKEY_CURRENT_USER\Software\Autodesk\AutoCAD\R24.1\ACAD-5101:407}
 
-                // Check to see if the "MyApp" key exists
                 using (regAcadAppKey)
                 {
                     //var regAppAddInKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(regAcadAppKey.ToString()) ?? Microsoft.Win32.Registry.CurrentUser.CreateSubKey(sAppName);
-
-                    // Check to see if the "MyApp" key exists
                     string[] subKeys = regAcadAppKey.GetSubKeyNames();
                     foreach (string subKey in subKeys)
                     {
                         if (subKey.Equals(sAppName))
                             return;
                     }
+                    string sAssemblyPath = Assembly.GetExecutingAssembly().Location;
 
-                    // Get the location of this module
-                    string sAssemblyPath = Assembly.GetExecutingAssembly().Location; //	"C:\\Projects\\my_tasks\\CAD\\dotnet\\copy_files_async\\bin\\x64\\AutoCAD_Debug_2021\\copy_files_async.dll"	
-
-                    // Register the application
-                    Microsoft.Win32.RegistryKey regAppAddInKey = regAcadAppKey.CreateSubKey(sAppName); //{HKEY_CURRENT_USER\Software\Autodesk\AutoCAD\R24.1\ACAD-5101:407\Applications\CopyAsync}
+                    Microsoft.Win32.RegistryKey regAppAddInKey = regAcadAppKey.CreateSubKey(sAppName);
                     regAppAddInKey.SetValue("DESCRIPTION", sAppName, RegistryValueKind.String);
                     regAppAddInKey.SetValue("LOADCTRLS", 2, RegistryValueKind.DWord);
                     regAppAddInKey.SetValue("LOADER", sAssemblyPath, RegistryValueKind.String);

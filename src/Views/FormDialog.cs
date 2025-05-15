@@ -8,8 +8,8 @@ namespace placing_block.src
 {
     public partial class FormDialog : Form
     {
-        Reporter _reporter;
-        Commands _cmd { get; set; }
+        IReporter _reporter;
+        Commands _cmd = new Commands();
 
         public FormDialog()
         {
@@ -73,7 +73,7 @@ namespace placing_block.src
             }
         }
 
-        private void insertBtn_Click(object sender, DoWorkEventArgs e)
+        private void insertBtn_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(coordPath.Text))
             {
@@ -130,7 +130,7 @@ namespace placing_block.src
         {
             string coordRoot = coordPath.Text;
             string blockRoot = blockPath.Text;
-            //_cmd.PlaceBlocks(blockRoot, coordRoot, sender, e);
+            _cmd.PlaceBlocks(blockRoot, coordRoot, sender, e);
         }
 
 
