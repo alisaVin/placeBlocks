@@ -52,38 +52,34 @@ namespace placing_block
             using (targetDoc.LockDocument(DocumentLockMode.Write, "PLACEBLOCK", "PLACEBLOCK", true))
             {
                 var blockData = exReader.ReadInputData(coordPath);
-                var validBlocks = blockData.Where(b => b.X >= 0 && b.Y >= 0 && b.Etage == etageInput)
+                var validBlocks = blockData.Where(b => b.X > 0 && b.Y > 0 && b.Etage == etageInput)
                                           .ToList();
-                var firstBlocks = new List<BlockDataModel>();
+                //var firstBlocks = new List<BlockDataModel>();
 
-                for (int i = 0; i < 50; i++)
-                {
-                    if (validBlocks[i] != null)
-                    {
-                        firstBlocks.Add(validBlocks[i]);
-                    }
-                }
+                //for (int i = 0; i < 50; i++)
+                //{
+                //    if (validBlocks[i] != null)
+                //    {
+                //        firstBlocks.Add(validBlocks[i]);
+                //    }
+                //}
 
                 try
                 {
                     bool success = false;
-                    for (int i = 0; i < firstBlocks.Count; i++)
-                    {
-                        System.Windows.Forms.Application.DoEvents();
-                        Thread.Sleep(50);
-                        Invoker.Invoke(() =>
-                        {
-                            Database sourceDb = AcadUtils.OpenDb(blockPath, _reporter);
-                            if (sourceDb == null) return;
-                            success = InsertProcess(blockName, targetDb, sourceDb, firstBlocks);
-                        }, _ctrl);
 
-                        if (bw.CancellationPending == true || success == false)
-                        {
-                            e.Cancel = true;
-                            break;
-                        }
-                    }
+                    System.Windows.Forms.Application.DoEvents();
+                    Thread.Sleep(50);
+                    Invoker.Invoke(() =>
+                    {
+                        Database sourceDb = AcadUtils.OpenDb(blockPath, _reporter);
+                        if (sourceDb == null) return;
+                        success = InsertProcess(blockName, targetDb, sourceDb, validBlocks);
+                    }, _ctrl);
+
+                    if (bw.CancellationPending == true || success == false)
+                        e.Cancel = true;
+
                 }
                 catch (System.Exception ex)
                 {
@@ -99,9 +95,7 @@ namespace placing_block
             {
                 //sourceDb.ReadDwgFile(blockPath, FileOpenMode.OpenForReadAndReadShare, true, string.Empty);
 
-                //Input Feld (block name) ///////////////
                 var blockDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
-                // Reporter ''''''''''''''''
                 if (blockDefId == null)
                 {
                     _reporter.WriteText("The block doesn't exist in this drawing");
@@ -136,14 +130,14 @@ namespace placing_block
                     foreach (var b in validBlocks)
                     {
                         insertPoints.Add(new Point3d(b.X, b.Y, 0));
-                        lstAttrData.AddRange(new List<AttributesModel>
-                        {
+                        lstAttrData.Add(
+
                             //new AttributesModel { Name = "PUNKTNUMMER", Value = b.PunktNum },
                             //new AttributesModel { Name = "TA_ID", Value = b.TAId },
-                            new AttributesModel { Name = "TA_BEZEICHNUNG", Value = b.TABezeichnung },
+                            new AttributesModel { Name = "TA_BEZEICHNUNG", Value = b.TABezeichnung }
                             //new AttributesModel { Name = "TA_GRUPPE", Value = b.TAGruppe }
-                            new AttributesModel { Name = "Geschoss", Value = b.Etage }
-                        });
+                            //new AttributesModel { Name = "Geschoss", Value = b.Etage }
+                        );
                     }
 
                     var blBtrID = AcadUtils.GetBlockDef(targetDb, blockName);
@@ -183,7 +177,7 @@ namespace placing_block
                 Autodesk.AutoCAD.DatabaseServices.AttributeCollection attrColl = bRef.AttributeCollection;
                 foreach (ObjectId adId in bd)
                 {
-                    var adObj = tr.GetObject(adId, OpenMode.ForRead);
+                    var adObj = tr.GetObject(adId, OpenMode.ForWrite); //!!!
                     AttributeDefinition ad = adObj as AttributeDefinition;
                     if (ad != null)
                     {
@@ -191,10 +185,15 @@ namespace placing_block
                         {
                             attrRef.SetAttributeFromBlock(ad, bRef.BlockTransform);
                             var modelEntity = lstAttrData.FirstOrDefault(b => b.Name == "TA_BEZEICHNUNG");
-                            if (modelEntity != null)
+                            if (modelEntity != null && attrRef.Tag == "ATTR1")
                             {
                                 attrRef.Tag = modelEntity.Name;
                                 attrRef.TextString = modelEntity.Value;
+                                lstAttrData.Remove(modelEntity);
+                            }
+                            else
+                            {
+                                continue;
                             }
                             bRef.AttributeCollection.AppendAttribute(attrRef);
                             tr.AddNewlyCreatedDBObject(attrRef, true);

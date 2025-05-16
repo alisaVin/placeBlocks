@@ -24,9 +24,11 @@ namespace placing_block.src
                 var rows = worksheetPart.Worksheet.GetFirstChild<SheetData>()
                                                     .Elements<Row>();
                 var dataRows = rows.Skip(1);
+                var clearRows = dataRows.Where(row => !row.Elements<Cell>()
+                                       .Any(cell => cell.DataType?.Value == CellValues.Error))
+                                       .ToList();
 
-
-                foreach (Row row in dataRows)
+                foreach (Row row in clearRows)
                 {
                     BlockDataModel blockRecord = new BlockDataModel();
 
@@ -38,12 +40,14 @@ namespace placing_block.src
 
                     foreach (Cell cell in cells)
                     {
-                        string col = GetColumnName(cell.CellReference);
                         //if (sst != null && int.TryParse(cell.CellValue.InnerText, out int idx) && idx < sst.Count)
                         //{
 
                         //
                         //    return sst[idx].InnerText;
+
+                        string col = GetColumnName(cell.CellReference);
+                        string text = GetCellText(cell, workbookPart);
 
                         switch (col)
                         {
@@ -54,8 +58,7 @@ namespace placing_block.src
                             //    break;
 
                             case "B":
-                                string taDesignasion = GetCellText(cell, workbookPart);
-                                blockRecord.TABezeichnung = taDesignasion;
+                                blockRecord.TABezeichnung = text;
                                 break;
 
                             //case "C":
@@ -69,7 +72,7 @@ namespace placing_block.src
                             //    break;
 
                             case "I":
-                                string rawXCoord = cell.CellValue.Text;
+                                string rawXCoord = GetCellText(cell, workbookPart);
                                 if (rawXCoord != "-1" && rawXCoord != null)
                                 {
                                     double xCoord = double.Parse(rawXCoord, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
@@ -78,7 +81,7 @@ namespace placing_block.src
                                 break;
 
                             case "J":
-                                string rawYCoord = cell.CellValue.Text;
+                                string rawYCoord = GetCellText(cell, workbookPart);
                                 if (rawYCoord != "-1" && rawYCoord != null)
                                 {
                                     double yCoord = double.Parse(rawYCoord, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
@@ -87,13 +90,14 @@ namespace placing_block.src
                                 break;
 
                             case "L":
+
                                 string etageInp = GetCellText(cell, workbookPart);
                                 blockRecord.Etage = etageInp;
                                 break;
                         }
+
                         //}
                     }
-
                     blockData.Add(blockRecord);
                 }
             }
