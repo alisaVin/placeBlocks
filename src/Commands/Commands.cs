@@ -4,10 +4,13 @@ using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Runtime;
 using Microsoft.Win32;
 using placing_block.src;
+using placing_block.src.Models;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Windows.Forms;
 
 
@@ -17,7 +20,7 @@ namespace placing_block
     {
         Control _ctrl;
         ExcelReader exReader = new ExcelReader();
-        Reporter _reporter;
+        IReporter _reporter;
 
         [CommandMethod("PLACEBLOCK", CommandFlags.Session)]
         public void Demo()
@@ -27,7 +30,7 @@ namespace placing_block
         }
 
         //public void PlaceBlocks()
-        public void PlaceBlocks(string blockPath, string coordPath, object sender, DoWorkEventArgs e)
+        public void PlaceBlocks(string blockPath, string coordPath, string etageInput, object sender, DoWorkEventArgs e)
         {
             _ctrl = e.Argument as Control;
             BackgroundWorker bw = sender as BackgroundWorker;
@@ -49,104 +52,156 @@ namespace placing_block
             using (targetDoc.LockDocument(DocumentLockMode.Write, "PLACEBLOCK", "PLACEBLOCK", true))
             {
                 var blockData = exReader.ReadInputData(coordPath);
+                var validBlocks = blockData.Where(b => b.X >= 0 && b.Y >= 0 && b.Etage == etageInput)
+                                          .ToList();
+                var firstBlocks = new List<BlockDataModel>();
+
+                for (int i = 0; i < 50; i++)
+                {
+                    if (validBlocks[i] != null)
+                    {
+                        firstBlocks.Add(validBlocks[i]);
+                    }
+                }
 
                 try
-                {  //Exception repeted DWG readed
-                    Invoker.Invoke(() =>
+                {
+                    bool success = false;
+                    for (int i = 0; i < firstBlocks.Count; i++)
                     {
-                        Database sourceDb = AcadUtils.OpenDb(blockPath, _reporter);
-                        using (sourceDb)
+                        System.Windows.Forms.Application.DoEvents();
+                        Thread.Sleep(50);
+                        Invoker.Invoke(() =>
                         {
-                            //sourceDb.ReadDwgFile(blockPath, FileOpenMode.OpenForReadAndReadShare, true, string.Empty);
+                            Database sourceDb = AcadUtils.OpenDb(blockPath, _reporter);
                             if (sourceDb == null) return;
-                            //Input Feld (block name) ///////////////
-                            var blockDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
-                            // Reporter ''''''''''''''''
-                            if (blockDefId == null)
-                            {
-                                _reporter.WriteText("The block doesn't exist in this drawing");
-                                ed.WriteMessage("The block doesn't exist in this drawing");
-                                return;
-                            }
+                            success = InsertProcess(blockName, targetDb, sourceDb, firstBlocks);
+                        }, _ctrl);
 
-                            using (Transaction tr = targetDb.TransactionManager.StartTransaction())
-                            {
-                                #region copy block into dwg
-                                var bt = tr.GetObject(targetDb.BlockTableId, OpenMode.ForRead) as BlockTable;
-                                var ms = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite) as BlockTableRecord;
-                                var blIds = new ObjectIdCollection();
-
-                                if (blockDefId != null)
-                                    blIds.Add(blockDefId);
-                                var idMapping = new IdMapping();
-                                sourceDb.WblockCloneObjects(blIds, targetDb.BlockTableId, idMapping, DuplicateRecordCloning.Replace, false);
-
-                                //reporter ####################################
-
-                                ed.WriteMessage($"\nCopied {blIds.Count.ToString()} block definitions from {blockPath} to the current drawing.");
-                                #endregion
-
-                                #region set attributes to copied blocks
-                                List<Point3d> insertPoints = new List<Point3d>(); //Einfhügepunkt - Zentrum
-                                foreach (var blPoint in blockData)
-                                {
-                                    insertPoints.Add(new Point3d(blPoint.X, blPoint.Y, 0));
-                                }
-
-                                var blBtr = AcadUtils.GetBlockDef(targetDb, blockName);
-                                if (blBtr.IsNull) return;
-                                for (int i = 0; i < insertPoints.Count; i++)
-                                {
-                                    var newBr = new BlockReference(insertPoints[i], blBtr);
-                                    ms.AppendEntity(newBr);
-                                    tr.AddNewlyCreatedDBObject(newBr, true);
-
-                                    using (var blDef = tr.GetObject(blBtr, OpenMode.ForRead) as BlockTableRecord)
-                                    {
-                                        if (blDef == null || !blDef.HasAttributeDefinitions)
-                                            return;
-
-                                        //attribute auslesen
-                                        if (newBr != null)
-                                        {
-                                            Autodesk.AutoCAD.DatabaseServices.AttributeCollection attrColl = newBr.AttributeCollection;
-                                            foreach (ObjectId adId in blDef)
-                                            {
-                                                var adObj = tr.GetObject(adId, OpenMode.ForRead);
-                                                AttributeDefinition ad = adObj as AttributeDefinition;
-                                                if (ad != null)
-                                                {
-                                                    using (var attrRef = new AttributeReference())
-                                                    {
-                                                        attrRef.SetAttributeFromBlock(ad, newBr.BlockTransform);
-
-                                                        attrRef.Tag = "Punktkoordinaten";
-                                                        attrRef.TextString = $"{blockData[i].X}, {blockData[i].Y}";
-                                                        newBr.AttributeCollection.AppendAttribute(attrRef);
-                                                        tr.AddNewlyCreatedDBObject(attrRef, true);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                #endregion
-
-                                //SwapBlockIds - soll schauen, wie man die Ids von FAMOS zu den Blöcken zuweist
-                                ms.Dispose();
-                                tr.Commit();
-                            }
+                        if (bw.CancellationPending == true || success == false)
+                        {
+                            e.Cancel = true;
+                            break;
                         }
-                    }, _ctrl);
+                    }
                 }
-                catch (Exception ex)
+                catch (System.Exception ex)
                 {
                     _reporter.ReportExeption(ex);
                     ed.WriteMessage($"\n Error during copy: {ex.Message} \n {ex.StackTrace}");
                 }
             }
+        }
 
+        private bool InsertProcess(string blockName, Database targetDb, Database sourceDb, List<BlockDataModel> validBlocks)
+        {
+            using (sourceDb)
+            {
+                //sourceDb.ReadDwgFile(blockPath, FileOpenMode.OpenForReadAndReadShare, true, string.Empty);
+
+                //Input Feld (block name) ///////////////
+                var blockDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
+                // Reporter ''''''''''''''''
+                if (blockDefId == null)
+                {
+                    _reporter.WriteText("The block doesn't exist in this drawing");
+                    return false;
+                }
+
+                using (Transaction tr = targetDb.TransactionManager.StartTransaction())
+                {
+                    #region copy block into dwg
+                    var bt = tr.GetObject(targetDb.BlockTableId, OpenMode.ForRead) as BlockTable;
+                    var ms = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite) as BlockTableRecord;
+                    var blIds = new ObjectIdCollection();
+
+                    if (blockDefId != null)
+                        blIds.Add(blockDefId);
+                    if (blIds.Count != 0)
+                    {
+                        var idMapping = new IdMapping();
+                        sourceDb.WblockCloneObjects(blIds, targetDb.BlockTableId, idMapping, DuplicateRecordCloning.Replace, false);
+                    }
+                    else
+                    {
+                        _reporter?.ClearText();
+                        _reporter?.WriteText("\nNo block definition found.");
+                        return false;
+                    }
+                    #endregion
+
+                    #region set attributes to copied blocks
+                    List<Point3d> insertPoints = new List<Point3d>(); //Einfhügepunkt - Zentrum
+                    List<AttributesModel> lstAttrData = new List<AttributesModel>();
+                    foreach (var b in validBlocks)
+                    {
+                        insertPoints.Add(new Point3d(b.X, b.Y, 0));
+                        lstAttrData.AddRange(new List<AttributesModel>
+                        {
+                            //new AttributesModel { Name = "PUNKTNUMMER", Value = b.PunktNum },
+                            //new AttributesModel { Name = "TA_ID", Value = b.TAId },
+                            new AttributesModel { Name = "TA_BEZEICHNUNG", Value = b.TABezeichnung },
+                            //new AttributesModel { Name = "TA_GRUPPE", Value = b.TAGruppe }
+                            new AttributesModel { Name = "Geschoss", Value = b.Etage }
+                        });
+                    }
+
+                    var blBtrID = AcadUtils.GetBlockDef(targetDb, blockName);
+                    if (blBtrID.IsNull) return false;
+                    for (int i = 0; i < insertPoints.Count; i++)
+                    {
+                        var newBr = new BlockReference(insertPoints[i], blBtrID);
+                        ms.AppendEntity(newBr);
+                        tr.AddNewlyCreatedDBObject(newBr, true);
+
+                        using (var blDef = tr.GetObject(blBtrID, OpenMode.ForRead) as BlockTableRecord)
+                        {
+                            if (blDef == null || !blDef.HasAttributeDefinitions)
+                                return false;
+
+                            SetAttributeData(tr, blDef, newBr, lstAttrData);
+                        }
+                    }
+                    #endregion
+
+                    //SwapBlockIds - soll schauen, wie man die Ids von FAMOS zu den Blöcken zuweist
+                    ms.Dispose();
+                    tr.Commit();
+                }
+            }
+            return true;
+        }
+
+        private void SetAttributeData(Transaction tr, BlockTableRecord bd, BlockReference bRef, List<AttributesModel> lstAttrData)
+        {
+            if ((bd == null) || !bd.HasAttributeDefinitions)
+                return;
+
+            //attribute auslesen
+            if (bRef != null)
+            {
+                Autodesk.AutoCAD.DatabaseServices.AttributeCollection attrColl = bRef.AttributeCollection;
+                foreach (ObjectId adId in bd)
+                {
+                    var adObj = tr.GetObject(adId, OpenMode.ForRead);
+                    AttributeDefinition ad = adObj as AttributeDefinition;
+                    if (ad != null)
+                    {
+                        using (var attrRef = new AttributeReference())
+                        {
+                            attrRef.SetAttributeFromBlock(ad, bRef.BlockTransform);
+                            var modelEntity = lstAttrData.FirstOrDefault(b => b.Name == "TA_BEZEICHNUNG");
+                            if (modelEntity != null)
+                            {
+                                attrRef.Tag = modelEntity.Name;
+                                attrRef.TextString = modelEntity.Value;
+                            }
+                            bRef.AttributeCollection.AppendAttribute(attrRef);
+                            tr.AddNewlyCreatedDBObject(attrRef, true);
+                        }
+                    }
+                }
+            }
         }
 
         [CommandMethod("RegisterApp", CommandFlags.Session)]

@@ -41,6 +41,8 @@
             this.canselBtn = new System.Windows.Forms.Button();
             this.errorProvCoord = new System.Windows.Forms.ErrorProvider(this.components);
             this.errorProvBlock = new System.Windows.Forms.ErrorProvider(this.components);
+            this.etageLabel = new System.Windows.Forms.Label();
+            this.etageInput = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.errorProvCoord)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.errorProvBlock)).BeginInit();
             this.SuspendLayout();
@@ -85,7 +87,7 @@
             // 
             this.insertBtn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.insertBtn.Location = new System.Drawing.Point(407, 115);
+            this.insertBtn.Location = new System.Drawing.Point(407, 148);
             this.insertBtn.Name = "insertBtn";
             this.insertBtn.Size = new System.Drawing.Size(75, 23);
             this.insertBtn.TabIndex = 5;
@@ -97,9 +99,9 @@
             // 
             this.richTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox.Location = new System.Drawing.Point(28, 177);
+            this.richTextBox.Location = new System.Drawing.Point(31, 197);
             this.richTextBox.Name = "richTextBox";
-            this.richTextBox.Size = new System.Drawing.Size(475, 206);
+            this.richTextBox.Size = new System.Drawing.Size(475, 224);
             this.richTextBox.TabIndex = 6;
             this.richTextBox.Text = "";
             // 
@@ -128,7 +130,7 @@
             // canselBtn
             // 
             this.canselBtn.Enabled = false;
-            this.canselBtn.Location = new System.Drawing.Point(326, 115);
+            this.canselBtn.Location = new System.Drawing.Point(326, 148);
             this.canselBtn.Name = "canselBtn";
             this.canselBtn.Size = new System.Drawing.Size(75, 23);
             this.canselBtn.TabIndex = 9;
@@ -144,11 +146,31 @@
             // 
             this.errorProvBlock.ContainerControl = this;
             // 
+            // etageLabel
+            // 
+            this.etageLabel.AutoSize = true;
+            this.etageLabel.Location = new System.Drawing.Point(28, 103);
+            this.etageLabel.Name = "etageLabel";
+            this.etageLabel.Size = new System.Drawing.Size(57, 13);
+            this.etageLabel.TabIndex = 10;
+            this.etageLabel.Text = "Geschoss ";
+            // 
+            // etageInput
+            // 
+            this.etageInput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.etageInput.Location = new System.Drawing.Point(31, 119);
+            this.etageInput.Name = "etageInput";
+            this.etageInput.Size = new System.Drawing.Size(451, 20);
+            this.etageInput.TabIndex = 11;
+            // 
             // FormDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(534, 411);
+            this.ClientSize = new System.Drawing.Size(534, 449);
+            this.Controls.Add(this.etageInput);
+            this.Controls.Add(this.etageLabel);
             this.Controls.Add(this.canselBtn);
             this.Controls.Add(this.selBlockBtn);
             this.Controls.Add(this.selCoordBtn);
@@ -184,5 +206,7 @@
         private System.Windows.Forms.Button canselBtn;
         private System.Windows.Forms.ErrorProvider errorProvCoord;
         private System.Windows.Forms.ErrorProvider errorProvBlock;
+        private System.Windows.Forms.Label etageLabel;
+        private System.Windows.Forms.TextBox etageInput;
     }
 }

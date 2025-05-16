@@ -8,5 +8,6 @@
         public string TAId { get; set; }
         public string TABezeichnung { get; set; }
         public string TAGruppe { get; set; }
+        public string Etage { get; set; }
     }
 }

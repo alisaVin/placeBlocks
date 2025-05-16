@@ -18,22 +18,23 @@ namespace placing_block.src
             {
                 WorkbookPart workbookPart = doc.WorkbookPart;
                 var sheet = workbookPart.Workbook.Descendants<Sheet>()
-                                                    .First(s => s.Name == "Technische Anlage");
+                                    .First(s => s.Name == "Technische Anlage");
 
                 WorksheetPart worksheetPart = workbookPart.GetPartById(sheet.Id) as WorksheetPart;
                 var rows = worksheetPart.Worksheet.GetFirstChild<SheetData>()
                                                     .Elements<Row>();
                 var dataRows = rows.Skip(1);
 
+
                 foreach (Row row in dataRows)
                 {
                     BlockDataModel blockRecord = new BlockDataModel();
 
                     var cells = row.Elements<Cell>();
-                    //var sst = workbookPart.SharedStringTablePart?
-                    //                              .SharedStringTable
-                    //                              .Elements<SharedStringItem>()
-                    //                              .ToList();
+                    var sst = workbookPart.SharedStringTablePart?
+                                                  .SharedStringTable
+                                                  .Elements<SharedStringItem>()
+                                                  .ToList();
 
                     foreach (Cell cell in cells)
                     {
@@ -46,26 +47,26 @@ namespace placing_block.src
 
                         switch (col)
                         {
-                            case "A":
-                                string taId = cell.CellValue.InnerText;
-                                if (taId != "" || taId != null)
-                                    blockRecord.TAId = taId;
-                                break;
+                            //case "A":
+                            //    string taId = cell.CellValue.InnerText;
+                            //    if (taId != "" || taId != null)
+                            //        blockRecord.TAId = taId;
+                            //    break;
 
                             case "B":
-                                string taDesignasion = cell.CellValue.InnerText;
+                                string taDesignasion = GetCellText(cell, workbookPart);
                                 blockRecord.TABezeichnung = taDesignasion;
                                 break;
 
-                            case "C":
-                                string taGroup = cell.CellValue.InnerText;
-                                blockRecord.TAGruppe = taGroup;
-                                break;
+                            //case "C":
+                            //    string taGroup = cell.CellValue.InnerText;
+                            //    blockRecord.TAGruppe = taGroup;
+                            //    break;
 
-                            case "E":
-                                string pointNum = cell.CellValue.InnerText;
-                                blockRecord.PunktNum = pointNum;
-                                break;
+                            //case "E":
+                            //    string pointNum = cell.CellValue.InnerText;
+                            //    blockRecord.PunktNum = pointNum;
+                            //    break;
 
                             case "I":
                                 string rawXCoord = cell.CellValue.Text;
@@ -84,6 +85,11 @@ namespace placing_block.src
                                     blockRecord.Y = yCoord;
                                 }
                                 break;
+
+                            case "L":
+                                string etageInp = GetCellText(cell, workbookPart);
+                                blockRecord.Etage = etageInp;
+                                break;
                         }
                         //}
                     }
@@ -99,6 +105,34 @@ namespace placing_block.src
             return new string(cellReference
                 .TakeWhile(c => char.IsLetter(c))
                 .ToArray());
+        }
+
+        private string GetCellText(Cell cell, WorkbookPart wbPart)
+        {
+            // Wenn kein Wert vorhanden, leer zurückgeben
+            if (cell.CellValue == null)
+                return string.Empty;
+
+            string raw = cell.CellValue.Text;
+
+            // SharedString-Lookup
+            if (cell.DataType != null && cell.DataType.Value == CellValues.SharedString)
+            {
+                // Index parsen
+                if (int.TryParse(raw, out int ssid))
+                {
+                    var sstPart = wbPart.GetPartsOfType<SharedStringTablePart>()
+                                        .FirstOrDefault();
+                    if (sstPart?.SharedStringTable != null)
+                    {
+                        // InnerText ist der tatsächliche Zell­inhalt
+                        return sstPart.SharedStringTable
+                                      .ElementAt(ssid)
+                                      .InnerText;
+                    }
+                }
+            }
+            return raw;
         }
     }
 }
