@@ -63,6 +63,7 @@ namespace placing_block
                 //        firstBlocks.Add(validBlocks[i]);
                 //    }
                 //}
+                //55.936 BE.95 - E.206 Brandschutztüren
 
                 try
                 {
