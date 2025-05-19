@@ -8,8 +8,8 @@ namespace placing_block.src
 {
     public partial class FormDialog : Form
     {
-        Reporter _reporter;
-        Commands _cmd { get; set; }
+        IReporter _reporter;
+        Commands _cmd = new Commands();
 
         public FormDialog()
         {
@@ -73,7 +73,7 @@ namespace placing_block.src
             }
         }
 
-        private void insertBtn_Click(object sender, DoWorkEventArgs e)
+        private void insertBtn_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(coordPath.Text))
             {
@@ -119,18 +119,20 @@ namespace placing_block.src
             _reporter?.ClearText();
             _reporter?.WriteText("Das Prozess wurde erfolgreich abgeschlossen.");
             Thread.Sleep(100);
+            insertBtn.Enabled = true;
+            canselBtn.Enabled = false;
         }
 
         private void Bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-
         }
 
         private void Bw_DoWork(object sender, DoWorkEventArgs e)
         {
             string coordRoot = coordPath.Text;
             string blockRoot = blockPath.Text;
-            //_cmd.PlaceBlocks(blockRoot, coordRoot, sender, e);
+            string etage = etageInput.Text;
+            _cmd.PlaceBlocks(blockRoot, coordRoot, etage, sender, e);
         }
 
 
@@ -150,7 +152,5 @@ namespace placing_block.src
             Properties.Settings.Default.WindowHeight = this.Height;
             Properties.Settings.Default.WindowLocation = this.Location;
         }
-
-
     }
 }

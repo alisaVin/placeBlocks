@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{249F1929-830A-4346-8617-541EA11E52EA}</ProjectGuid>
+    <ProjectGuid>{A24A47F6-BF17-4EA8-A372-03ED2A2C67D9}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>placing_block</RootNamespace>
@@ -17,10 +17,11 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\ACAD2021_x64\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;ACAD2021_x64</DefineConstants>
+    <OutputPath>bin\Debug\ARES2021_x64\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;ARES2021_x64</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -33,25 +34,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'ARES_Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\ARES_Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;ACAD2021_x64</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;ARES2021_x64</DefineConstants>
     <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AcCoreMgd">
-      <HintPath>..\..\..\ObjectARX\ObjectARX_2021\inc\AcCoreMgd.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="AcDbMgd">
-      <HintPath>..\..\..\ObjectARX\ObjectARX_2021\inc\AcDbMgd.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="AcMgd">
-      <HintPath>..\..\..\ObjectARX\ObjectARX_2021\inc\AcMgd.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="ClosedXML.Parser, Version=1.0.0.0, Culture=neutral, PublicKeyToken=1d5f7376574c51ec, processorArchitecture=MSIL">
       <HintPath>packages\ClosedXML.Parser.1.2.0\lib\netstandard2.0\ClosedXML.Parser.dll</HintPath>
       <Private>True</Private>
@@ -65,6 +54,10 @@
     <Reference Include="ExcelNumberFormat, Version=1.1.0.0, Culture=neutral, PublicKeyToken=23c6f5d73be07eca, processorArchitecture=MSIL">
       <HintPath>packages\ExcelNumberFormat.1.1.0\lib\net20\ExcelNumberFormat.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="FxCoreMgd_23.1_16">
+      <HintPath>..\..\..\Program Files\Graebert GmbH\ARES Commander 2024\BIN\FxCoreMgd_23.1_16.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Bcl.HashCode, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\Microsoft.Bcl.HashCode.1.1.1\lib\net461\Microsoft.Bcl.HashCode.dll</HintPath>
@@ -126,6 +119,10 @@
     </Reference>
     <Reference Include="System.Xml">
       <Private>True</Private>
+    </Reference>
+    <Reference Include="TD_Mgd_23.1_16">
+      <HintPath>..\..\..\Program Files\Graebert GmbH\ARES Commander 2024\BIN\TD_Mgd_23.1_16.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="WindowsBase">
       <Private>True</Private>
