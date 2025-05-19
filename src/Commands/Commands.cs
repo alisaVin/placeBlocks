@@ -126,7 +126,7 @@ namespace placing_block
                     #endregion
 
                     #region set attributes to copied blocks
-                    List<Point3d> insertPoints = new List<Point3d>(); //Einfhügepunkt - Zentrum
+                    List<Point3d> insertPoints = new List<Point3d>();
                     List<AttributesModel> lstAttrData = new List<AttributesModel>();
                     foreach (var b in validBlocks)
                     {
@@ -159,7 +159,6 @@ namespace placing_block
                     }
                     #endregion
 
-                    //SwapBlockIds - soll schauen, wie man die Ids von FAMOS zu den Blöcken zuweist
                     ms.Dispose();
                     tr.Commit();
                 }
@@ -211,13 +210,12 @@ namespace placing_block
             {
                 string sAppName = "PlacingBlock";
 
-                string sProdKey = HostApplicationServices.Current.UserRegistryProductRootKey; //"Software\\Autodesk\\AutoCAD\\R24.1\\ACAD-5101:407"	
+                string sProdKey = HostApplicationServices.Current.UserRegistryProductRootKey;
                 Microsoft.Win32.RegistryKey regAcadProdKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(sProdKey);
-                Microsoft.Win32.RegistryKey regAcadAppKey = regAcadProdKey.OpenSubKey("Applications", true); //{HKEY_CURRENT_USER\Software\Autodesk\AutoCAD\R24.1\ACAD-5101:407}
+                Microsoft.Win32.RegistryKey regAcadAppKey = regAcadProdKey.OpenSubKey("Applications", true);
 
                 using (regAcadAppKey)
                 {
-                    //var regAppAddInKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(regAcadAppKey.ToString()) ?? Microsoft.Win32.Registry.CurrentUser.CreateSubKey(sAppName);
                     string[] subKeys = regAcadAppKey.GetSubKeyNames();
                     foreach (string subKey in subKeys)
                     {
