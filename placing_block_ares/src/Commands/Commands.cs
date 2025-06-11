@@ -1,0 +1,288 @@
+﻿using Microsoft.Win32;
+using placing_block.src;
+using placing_block.src.Models;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
+using System.Windows.Forms;
+using Teigha.DatabaseServices;
+using Teigha.Geometry;
+using Teigha.Runtime;
+
+
+namespace placing_block
+{
+    public class Commands
+    {
+        Control _ctrl;
+        ExcelReader exReader = new ExcelReader();
+        IReporter _reporter;
+
+        [CommandMethod("PLACEBLOCK", CommandFlags.Session)]
+        public void Demo()
+        {
+            FormDialog formDlg = new FormDialog { TopMost = false };
+            formDlg.Show();
+        }
+
+        //public void PlaceBlocks()
+        public void PlaceBlocks(string coordPath, string blockPath, string blockName, string etageInput, object sender, DoWorkEventArgs e)
+        {
+            _ctrl = e.Argument as Control;
+            BackgroundWorker bw = sender as BackgroundWorker;
+            if (!File.Exists(coordPath) || !File.Exists(blockPath)) return;
+
+            if (bw.CancellationPending)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            var targetDoc = Teigha.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
+            var targetDb = targetDoc.Database;
+            var ed = targetDoc.Editor;
+
+            using (targetDoc.LockDocument())
+            {
+                var blockData = exReader.ReadInputData(coordPath, blockName, etageInput);
+                var validBlocks = blockData.Where(b => b.X > 0 && b.Y > 0 && b.Etage == etageInput)
+                                          .ToList();
+                //var firstBlocks = new List<BlockDataModel>();
+
+                //for (int i = 0; i < 50; i++)
+                //{
+                //    if (validBlocks[i] != null)
+                //    {
+                //        firstBlocks.Add(validBlocks[i]);
+                //    }
+                //}
+                //55.936 BE.95 - E.206 Brandschutztüren
+
+                try
+                {
+                    bool success = false;
+
+                    System.Windows.Forms.Application.DoEvents();
+                    Thread.Sleep(50);
+                    Invoker.Invoke(() =>
+                    {
+                        Database sourceDb = AcadUtils.OpenDb(blockPath, _reporter);
+                        if (sourceDb == null) return;
+                        success = InsertProcess(blockName, targetDb, sourceDb, validBlocks);
+                    }, _ctrl);
+
+                    if (bw.CancellationPending == true || success == false)
+                        e.Cancel = true;
+
+                }
+                catch (System.Exception ex)
+                {
+                    _reporter.ReportExeption(ex);
+                    ed.WriteMessage($"\n Error during copy: {ex.Message} \n {ex.StackTrace}");
+                }
+            }
+        }
+
+        private bool InsertProcess(string blockName, Database targetDb, Database sourceDb, List<BlockDataModel> validBlocks)
+        {
+            using (sourceDb)
+            {
+                //sourceDb.ReadDwgFile(blockPath, FileOpenMode.OpenForReadAndReadShare, true, string.Empty);
+
+                //var blockDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
+                //if (blockDefId == null)
+                //{
+                //    _reporter.WriteText("The block doesn't exist in this drawing");
+                //    return false;
+                //}
+
+                #region copy block into dwg
+
+                ObjectId blDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
+                var blIds = new ObjectIdCollection();
+                if (!blDefId.IsNull)
+                    blIds.Add(blDefId);
+
+                if (blIds.Count != 0)
+                {
+                    var idMapping = new IdMapping();
+                    sourceDb.WblockCloneObjects(blIds, targetDb.BlockTableId, idMapping, DuplicateRecordCloning.Replace, false);
+                }
+                else
+                {
+                    _reporter?.ClearText();
+                    _reporter?.WriteText("\nNo block definition found.");
+                    return false;
+                }
+                #endregion
+
+                #region set attributes to copied blocks
+                List<Point3d> insertPoints = new List<Point3d>();
+                List<AttributesModel> lstAttrData = new List<AttributesModel>();
+                foreach (var b in validBlocks)
+                {
+                    insertPoints.Add(new Point3d(b.X, b.Y, 0));
+                    lstAttrData.Add(
+
+                        //new AttributesModel { Name = "PUNKTNUMMER", Value = b.PunktNum },
+                        //new AttributesModel { Name = "TA_ID", Value = b.TAId },
+                        new AttributesModel { Name = "TA_BEZEICHNUNG", Value = b.TABezeichnung }
+                    //new AttributesModel { Name = "TA_GRUPPE", Value = b.TAGruppe }
+                    //new AttributesModel { Name = "Geschoss", Value = b.Etage }
+                    );
+                }
+
+                List<Point3d> transformPoints = TransformCoordinates(insertPoints);
+                using (Transaction tr = targetDb.TransactionManager.StartTransaction())
+                {
+                    var blBtrID = AcadUtils.GetBlockDef(targetDb, blockName);
+                    var bt = tr.GetObject(targetDb.BlockTableId, OpenMode.ForRead) as BlockTable;
+                    var ms = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite) as BlockTableRecord;
+
+                    try
+                    {
+                        if (blBtrID.IsNull) return false;
+                        for (int i = 0; i < insertPoints.Count; i++)
+                        {
+                            var newBr = new BlockReference(transformPoints[i], blBtrID);
+                            ms.AppendEntity(newBr);
+                            tr.AddNewlyCreatedDBObject(newBr, true);
+
+                            using (var blDef = tr.GetObject(blBtrID, OpenMode.ForRead) as BlockTableRecord)
+                            {
+                                if (blDef == null || !blDef.HasAttributeDefinitions)
+                                    return false;
+
+                                SetAttributeData(tr, blDef, newBr, lstAttrData);
+                            }
+                        }
+                        #endregion
+
+                        ms.Dispose();
+                        tr.Commit();
+                    }
+                    catch (System.Exception ex)
+                    {
+                        _reporter.ReportExeption(ex);
+                    }
+                }
+
+            }
+            return true;
+        }
+
+        private void SetAttributeData(Transaction tr, BlockTableRecord bd, BlockReference bRef, List<AttributesModel> lstAttrData)
+        {
+            if ((bd == null) || !bd.HasAttributeDefinitions)
+                return;
+
+            //attribute auslesen
+            if (bRef != null)
+            {
+                Teigha.DatabaseServices.AttributeCollection attrColl = bRef.AttributeCollection;
+                foreach (ObjectId adId in bd)
+                {
+                    var adObj = tr.GetObject(adId, OpenMode.ForWrite); //!!!
+                    AttributeDefinition ad = adObj as AttributeDefinition;
+                    if (ad != null)
+                    {
+                        using (var attrRef = new AttributeReference())
+                        {
+                            attrRef.SetAttributeFromBlock(ad, bRef.BlockTransform);
+                            var modelEntity = lstAttrData.FirstOrDefault(b => b.Name == "TA_BEZEICHNUNG");
+                            if (modelEntity != null && attrRef.Tag == "ATTR1")
+                            {
+                                attrRef.Tag = modelEntity.Name;
+                                attrRef.TextString = modelEntity.Value;
+                                lstAttrData.Remove(modelEntity);
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                            bRef.AttributeCollection.AppendAttribute(attrRef);
+                            tr.AddNewlyCreatedDBObject(attrRef, true);
+                        }
+                    }
+                }
+            }
+        }
+
+        public List<Point3d> TransformCoordinates(List<Point3d> originalCoords)
+        {
+            List<Point3d> rotatedCoords = new List<Point3d>();
+
+            // 90° Rotation im Uhrzeigersinn: (x,y) -> (y, -x)
+            foreach (Point3d coord in originalCoords)
+            {
+                double newX = coord.Y;
+                double newY = -coord.X;
+                rotatedCoords.Add(new Point3d(newX, newY, 0));
+            }
+
+            // Finde minimalen X-Wert und Y-Wert für Offset-Berechnung
+            double minY = double.MaxValue;
+            double minX = double.MaxValue;
+            foreach (Point3d coord in rotatedCoords)
+            {
+                if (coord.Y < minY)
+                    minY = coord.Y;
+
+                if (coord.X < minX)
+                    minX = coord.X;
+            }
+
+            // Berechne Offset um alle Y-Werte un X-Werte positiv zu machen
+            double yOffset = Math.Abs(minY);
+            double xOffset = Math.Abs(minX); //- 7.21; 
+
+            //Zuerst funktioniert es ungefähr
+            List<Point3d> finalCoords = new List<Point3d>();
+            foreach (Point3d coord in rotatedCoords)
+            {
+                //finalCoords.Add(new Point3d(coord.X - 12.01, coord.Y + yOffset, 0));
+                finalCoords.Add(new Point3d(coord.X + xOffset, coord.Y + yOffset, 0));
+            }
+            return finalCoords;
+        }
+
+        [CommandMethod("RegisterApp", CommandFlags.Session)]
+        public void RegisterApp()
+        {
+            try
+            {
+                string sAppName = "PlacingBlock";
+
+                string sProdKey = HostApplicationServices.Current.UserRegistryProductRootKey;
+                Microsoft.Win32.RegistryKey regAcadProdKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(sProdKey);
+                Microsoft.Win32.RegistryKey regAcadAppKey = regAcadProdKey.OpenSubKey("Applications", true);
+
+                using (regAcadAppKey)
+                {
+                    string[] subKeys = regAcadAppKey.GetSubKeyNames();
+                    foreach (string subKey in subKeys)
+                    {
+                        if (subKey.Equals(sAppName))
+                            return;
+                    }
+                    string sAssemblyPath = Assembly.GetExecutingAssembly().Location;
+
+                    Microsoft.Win32.RegistryKey regAppAddInKey = regAcadAppKey.CreateSubKey(sAppName);
+                    regAppAddInKey.SetValue("DESCRIPTION", sAppName, RegistryValueKind.String);
+                    regAppAddInKey.SetValue("LOADCTRLS", 2, RegistryValueKind.DWord);
+                    regAppAddInKey.SetValue("LOADER", sAssemblyPath, RegistryValueKind.String);
+                    regAppAddInKey.SetValue("MANAGED", 1, RegistryValueKind.DWord);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                _reporter.ReportExeption(ex);
+                MessageBox.Show(ex.Message + "\n" + ex.StackTrace);
+            }
+        }
+    }
+}

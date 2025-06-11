@@ -5,12 +5,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-
 namespace placing_block.src
 {
     public class ExcelReader
     {
-        public List<BlockDataModel> ReadInputData(string coordPathFile)
+        public List<BlockDataModel> ReadInputData(string coordPathFile, string blockName, string etage)
         {
             //string coordPathFile = "C:\\Projects\\Bundesverwaltungsgericht\\coord_UG_test.xlsx";
             List<BlockDataModel> blockData = new List<BlockDataModel>();
@@ -39,66 +38,100 @@ namespace placing_block.src
                                                   .Elements<SharedStringItem>()
                                                   .ToList();
 
-                    foreach (Cell cell in cells)
+                    var nameCell = cells.FirstOrDefault(c => string.Compare(GetColumnName(c.CellReference), "O", true) == 0);
+                    if (nameCell == null) continue;
+
+                    var nameValue = GetCellText(nameCell, workbookPart);
+                    if (nameValue != blockName) continue;
+
+                    var etCell = cells.FirstOrDefault(c => GetColumnName(c.CellReference) == "L");
+                    string etageInp = GetCellText(etCell, workbookPart);
+                    blockRecord.Etage = etageInp;
+
+                    if (etageInp == etage)
                     {
-                        //if (sst != null && int.TryParse(cell.CellValue.InnerText, out int idx) && idx < sst.Count)
-                        //{
+                        var bezCell = cells.FirstOrDefault(c => GetColumnName(c.CellReference) == "B");
+                        var bezValue = GetCellText(bezCell, workbookPart);
+                        blockRecord.TABezeichnung = bezValue;
 
-                        //
-                        //    return sst[idx].InnerText;
-
-                        string col = GetColumnName(cell.CellReference);
-                        string text = GetCellText(cell, workbookPart);
-
-                        switch (col)
+                        var xCell = cells.FirstOrDefault(c => GetColumnName(c.CellReference) == "I");
+                        var xValue = GetCellText(xCell, workbookPart);
+                        if (xValue != "-1" && xValue != null)
                         {
-                            //case "A":
-                            //    string taId = cell.CellValue.InnerText;
-                            //    if (taId != "" || taId != null)
-                            //        blockRecord.TAId = taId;
-                            //    break;
-
-                            case "B":
-                                blockRecord.TABezeichnung = text;
-                                break;
-
-                            //case "C":
-                            //    string taGroup = cell.CellValue.InnerText;
-                            //    blockRecord.TAGruppe = taGroup;
-                            //    break;
-
-                            //case "E":
-                            //    string pointNum = cell.CellValue.InnerText;
-                            //    blockRecord.PunktNum = pointNum;
-                            //    break;
-
-                            case "I":
-                                string rawXCoord = GetCellText(cell, workbookPart);
-                                if (rawXCoord != "-1" && rawXCoord != null)
-                                {
-                                    double xCoord = double.Parse(rawXCoord, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
-                                    blockRecord.X = xCoord;
-                                }
-                                break;
-
-                            case "J":
-                                string rawYCoord = GetCellText(cell, workbookPart);
-                                if (rawYCoord != "-1" && rawYCoord != null)
-                                {
-                                    double yCoord = double.Parse(rawYCoord, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
-                                    blockRecord.Y = yCoord;
-                                }
-                                break;
-
-                            case "L":
-
-                                string etageInp = GetCellText(cell, workbookPart);
-                                blockRecord.Etage = etageInp;
-                                break;
+                            double xCoord = double.Parse(xValue, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+                            blockRecord.X = xCoord;
                         }
 
-                        //}
+                        var yCell = cells.FirstOrDefault(c => GetColumnName(c.CellReference) == "J");
+                        var yValue = GetCellText(yCell, workbookPart);
+                        if (yValue != "-1" && yValue != null)
+                        {
+                            double yCoord = double.Parse(yValue, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+                            blockRecord.Y = yCoord;
+                        }
                     }
+
+                    //foreach (Cell cell in cells)
+                    //{
+                    //if (sst != null && int.TryParse(cell.CellValue.InnerText, out int idx) && idx < sst.Count)
+                    //{
+
+                    //
+                    //    return sst[idx].InnerText;
+
+                    //string col = GetColumnName(cell.CellReference);
+                    //string text = GetCellText(cell, workbookPart);
+
+
+                    //switch (col)
+                    //{
+                    //    //case "A":
+                    //    //    string taId = cell.CellValue.InnerText;
+                    //    //    if (taId != "" || taId != null)
+                    //    //        blockRecord.TAId = taId;
+                    //    //    break;
+
+                    //    case "B":
+                    //        blockRecord.TABezeichnung = text;
+                    //        break;
+
+                    //    //case "C":
+                    //    //    string taGroup = cell.CellValue.InnerText;
+                    //    //    blockRecord.TAGruppe = taGroup;
+                    //    //    break;
+
+                    //    //case "E":
+                    //    //    string pointNum = cell.CellValue.InnerText;
+                    //    //    blockRecord.PunktNum = pointNum;
+                    //    //    break;
+
+                    //    // Y in der Tabelle geschrieben; X - in ares
+                    //    case "I":
+                    //        string rawXCoord = GetCellText(cell, workbookPart);
+                    //        if (rawXCoord != "-1" && rawXCoord != null)
+                    //        {
+                    //            double xCoord = double.Parse(rawXCoord, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+                    //            blockRecord.X = xCoord;
+                    //        }
+                    //        break;
+                    //    // X in der Tabelle geschrieben; Y - in ares
+                    //    case "J":
+                    //        string rawYCoord = GetCellText(cell, workbookPart);
+                    //        if (rawYCoord != "-1" && rawYCoord != null)
+                    //        {
+                    //            double yCoord = double.Parse(rawYCoord, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+                    //            blockRecord.Y = yCoord;
+                    //        }
+                    //        break;
+
+                    //    case "L":
+
+                    //        string etageInp = GetCellText(cell, workbookPart);
+                    //        blockRecord.Etage = etageInp;
+                    //        break;
+                    //}
+                    //}
+                    //}
                     blockData.Add(blockRecord);
                 }
             }
