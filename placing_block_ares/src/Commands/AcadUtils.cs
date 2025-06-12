@@ -13,7 +13,7 @@ namespace placing_block.src
             var db = new Database(false, true);
             try
             {
-                db.ReadDwgFile(filePath, FileShare.ReadWrite, true, null);
+                db.ReadDwgFile(filePath, FileOpenMode.OpenForReadAndAllShare/*FileShare.ReadWrite*/, true, null);
                 return db;
             }
             catch (System.Exception ex)

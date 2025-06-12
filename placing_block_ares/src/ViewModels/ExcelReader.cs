@@ -71,6 +71,7 @@ namespace placing_block.src
                         }
                     }
 
+
                     //foreach (Cell cell in cells)
                     //{
                     //if (sst != null && int.TryParse(cell.CellValue.InnerText, out int idx) && idx < sst.Count)

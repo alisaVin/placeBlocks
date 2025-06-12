@@ -91,6 +91,7 @@ namespace placing_block
         {
             using (sourceDb)
             {
+                string layerName = "techAnlage_" + blockName;
                 //sourceDb.ReadDwgFile(blockPath, FileOpenMode.OpenForReadAndReadShare, true, string.Empty);
 
                 //var blockDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
@@ -102,22 +103,35 @@ namespace placing_block
 
                 #region copy block into dwg
 
-                ObjectId blDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
-                var blIds = new ObjectIdCollection();
-                if (!blDefId.IsNull)
-                    blIds.Add(blDefId);
+                using (var trans = sourceDb.TransactionManager.StartOpenCloseTransaction())
+                {
+                    var layerTable = trans.GetObject(sourceDb.LayerTableId, OpenMode.ForRead) as LayerTable;
+                    if (!layerTable.Has(layerName)) return false;
+                    var layIds = new ObjectIdCollection();
+                    var blLayId = layerTable[layerName];
+                    layIds.Add(blLayId);
 
-                if (blIds.Count != 0)
-                {
-                    var idMapping = new IdMapping();
-                    sourceDb.WblockCloneObjects(blIds, targetDb.BlockTableId, idMapping, DuplicateRecordCloning.Replace, false);
+                    ObjectId blDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
+                    var blIds = new ObjectIdCollection();
+                    if (!blDefId.IsNull)
+                        blIds.Add(blDefId);
+
+                    if (blIds.Count != 0 && layIds.Count != 0)
+                    {
+                        var mapping = new IdMapping();
+                        sourceDb.WblockCloneObjects(layIds, targetDb.LayerTableId, mapping, DuplicateRecordCloning.Replace, false);
+
+                        var idMapping = new IdMapping();
+                        sourceDb.WblockCloneObjects(blIds, targetDb.BlockTableId, idMapping, DuplicateRecordCloning.Replace, false);
+                    }
+                    else
+                    {
+                        _reporter?.ClearText();
+                        _reporter?.WriteText("\nNo block definition found.");
+                        return false;
+                    }
                 }
-                else
-                {
-                    _reporter?.ClearText();
-                    _reporter?.WriteText("\nNo block definition found.");
-                    return false;
-                }
+
                 #endregion
 
                 #region set attributes to copied blocks
@@ -149,6 +163,7 @@ namespace placing_block
                         for (int i = 0; i < insertPoints.Count; i++)
                         {
                             var newBr = new BlockReference(transformPoints[i], blBtrID);
+                            newBr.Layer = layerName;
                             ms.AppendEntity(newBr);
                             tr.AddNewlyCreatedDBObject(newBr, true);
 
