@@ -39,12 +39,13 @@
             this.selCoordBtn = new System.Windows.Forms.Button();
             this.selBlockBtn = new System.Windows.Forms.Button();
             this.canselBtn = new System.Windows.Forms.Button();
-            this.errorProvCoord = new System.Windows.Forms.ErrorProvider(this.components);
-            this.errorProvBlock = new System.Windows.Forms.ErrorProvider(this.components);
+            this.errorProv = new System.Windows.Forms.ErrorProvider(this.components);
             this.etageLabel = new System.Windows.Forms.Label();
             this.etageInput = new System.Windows.Forms.TextBox();
-            ((System.ComponentModel.ISupportInitialize)(this.errorProvCoord)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.errorProvBlock)).BeginInit();
+            this.blockName = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.progressBar = new System.Windows.Forms.ProgressBar();
+            ((System.ComponentModel.ISupportInitialize)(this.errorProv)).BeginInit();
             this.SuspendLayout();
             // 
             // label1
@@ -87,7 +88,7 @@
             // 
             this.insertBtn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.insertBtn.Location = new System.Drawing.Point(407, 148);
+            this.insertBtn.Location = new System.Drawing.Point(407, 187);
             this.insertBtn.Name = "insertBtn";
             this.insertBtn.Size = new System.Drawing.Size(75, 23);
             this.insertBtn.TabIndex = 5;
@@ -99,9 +100,9 @@
             // 
             this.richTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox.Location = new System.Drawing.Point(31, 197);
+            this.richTextBox.Location = new System.Drawing.Point(31, 248);
             this.richTextBox.Name = "richTextBox";
-            this.richTextBox.Size = new System.Drawing.Size(475, 224);
+            this.richTextBox.Size = new System.Drawing.Size(479, 173);
             this.richTextBox.TabIndex = 6;
             this.richTextBox.Text = "";
             // 
@@ -130,7 +131,7 @@
             // canselBtn
             // 
             this.canselBtn.Enabled = false;
-            this.canselBtn.Location = new System.Drawing.Point(326, 148);
+            this.canselBtn.Location = new System.Drawing.Point(326, 187);
             this.canselBtn.Name = "canselBtn";
             this.canselBtn.Size = new System.Drawing.Size(75, 23);
             this.canselBtn.TabIndex = 9;
@@ -138,18 +139,14 @@
             this.canselBtn.UseVisualStyleBackColor = true;
             this.canselBtn.Click += new System.EventHandler(this.canselBtn_Click);
             // 
-            // errorProvCoord
+            // errorProv
             // 
-            this.errorProvCoord.ContainerControl = this;
-            // 
-            // errorProvBlock
-            // 
-            this.errorProvBlock.ContainerControl = this;
+            this.errorProv.ContainerControl = this;
             // 
             // etageLabel
             // 
             this.etageLabel.AutoSize = true;
-            this.etageLabel.Location = new System.Drawing.Point(28, 103);
+            this.etageLabel.Location = new System.Drawing.Point(28, 142);
             this.etageLabel.Name = "etageLabel";
             this.etageLabel.Size = new System.Drawing.Size(57, 13);
             this.etageLabel.TabIndex = 10;
@@ -159,16 +156,47 @@
             // 
             this.etageInput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.etageInput.Location = new System.Drawing.Point(31, 119);
+            this.etageInput.Location = new System.Drawing.Point(31, 158);
             this.etageInput.Name = "etageInput";
             this.etageInput.Size = new System.Drawing.Size(451, 20);
             this.etageInput.TabIndex = 11;
+            // 
+            // blockName
+            // 
+            this.blockName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.blockName.Location = new System.Drawing.Point(31, 119);
+            this.blockName.Name = "blockName";
+            this.blockName.Size = new System.Drawing.Size(451, 20);
+            this.blockName.TabIndex = 15;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(28, 103);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(60, 13);
+            this.label3.TabIndex = 14;
+            this.label3.Text = "Blockname";
+            // 
+            // progressBar
+            // 
+            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.progressBar.Location = new System.Drawing.Point(28, 227);
+            this.progressBar.Name = "progressBar";
+            this.progressBar.Size = new System.Drawing.Size(482, 15);
+            this.progressBar.TabIndex = 16;
+            this.progressBar.Visible = false;
             // 
             // FormDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(534, 449);
+            this.Controls.Add(this.progressBar);
+            this.Controls.Add(this.blockName);
+            this.Controls.Add(this.label3);
             this.Controls.Add(this.etageInput);
             this.Controls.Add(this.etageLabel);
             this.Controls.Add(this.canselBtn);
@@ -185,8 +213,7 @@
             this.Text = "FormDialog";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormDialog_FormClosing);
             this.Load += new System.EventHandler(this.FormDialog_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.errorProvCoord)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.errorProvBlock)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.errorProv)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -204,9 +231,11 @@
         private System.Windows.Forms.Button selCoordBtn;
         private System.Windows.Forms.Button selBlockBtn;
         private System.Windows.Forms.Button canselBtn;
-        private System.Windows.Forms.ErrorProvider errorProvCoord;
-        private System.Windows.Forms.ErrorProvider errorProvBlock;
+        private System.Windows.Forms.ErrorProvider errorProv;
         private System.Windows.Forms.Label etageLabel;
         private System.Windows.Forms.TextBox etageInput;
+        private System.Windows.Forms.TextBox blockName;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.ProgressBar progressBar;
     }
 }

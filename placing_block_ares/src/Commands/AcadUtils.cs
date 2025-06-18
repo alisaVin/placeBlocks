@@ -18,7 +18,7 @@ namespace placing_block.src
             }
             catch (System.Exception ex)
             {
-                reporter?.ClearText();
+                reporter.ClearText();
                 if (reporter != null)
                     reporter.ReportExeption(ex);
 
@@ -60,8 +60,7 @@ namespace placing_block.src
             ObjectIdCollection newBlDefIds = new ObjectIdCollection();
             try
             {
-                Transaction trSource = db.TransactionManager.StartTransaction();
-                using (trSource)
+                using (Transaction trSource = db.TransactionManager.StartTransaction())
                 {
                     var bt = trSource.GetObject(db.BlockTableId, OpenMode.ForRead) as BlockTable;
                     foreach (ObjectId id in bt)

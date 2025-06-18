@@ -1,10 +1,10 @@
-﻿using Autodesk.AutoCAD.ApplicationServices;
-using Autodesk.AutoCAD.DatabaseServices;
+﻿using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Runtime;
 using Microsoft.Win32;
 using placing_block.src;
 using placing_block.src.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -29,8 +29,7 @@ namespace placing_block
             formDlg.Show();
         }
 
-        //public void PlaceBlocks()
-        public void PlaceBlocks(string blockPath, string coordPath, string etageInput, object sender, DoWorkEventArgs e)
+        public void PlaceBlocks(string coordPath, string blockPath, string blockName, string etageInput, object sender, DoWorkEventArgs e)
         {
             _ctrl = e.Argument as Control;
             BackgroundWorker bw = sender as BackgroundWorker;
@@ -42,49 +41,35 @@ namespace placing_block
                 return;
             }
 
-            var dm = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager;
-            var targetDoc = dm.CurrentDocument;
-            var targetDb = dm.MdiActiveDocument.Database;
-            var ed = dm.MdiActiveDocument.Editor;
+            var targetDoc = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
 
-            string blockName = "FSR";
-
-            using (targetDoc.LockDocument(DocumentLockMode.Write, "PLACEBLOCK", "PLACEBLOCK", true))
+            using (targetDoc.LockDocument())
             {
-                var blockData = exReader.ReadInputData(coordPath);
+                var targetDb = targetDoc.Database;
+                var ed = targetDoc.Editor;
+                var blockData = exReader.ReadInputData(coordPath, blockName, etageInput);
                 var validBlocks = blockData.Where(b => b.X > 0 && b.Y > 0 && b.Etage == etageInput)
                                           .ToList();
-                //var firstBlocks = new List<BlockDataModel>();
-
-                //for (int i = 0; i < 50; i++)
-                //{
-                //    if (validBlocks[i] != null)
-                //    {
-                //        firstBlocks.Add(validBlocks[i]);
-                //    }
-                //}
-                //55.936 BE.95 - E.206 Brandschutztüren
-
                 try
                 {
                     bool success = false;
-
+                    bw.ReportProgress(0);
                     System.Windows.Forms.Application.DoEvents();
-                    Thread.Sleep(50);
                     Invoker.Invoke(() =>
                     {
                         Database sourceDb = AcadUtils.OpenDb(blockPath, _reporter);
                         if (sourceDb == null) return;
                         success = InsertProcess(blockName, targetDb, sourceDb, validBlocks);
                     }, _ctrl);
-
+                    bw.ReportProgress(50);
+                    Thread.Sleep(50);
+                    bw.ReportProgress(100);
                     if (bw.CancellationPending == true || success == false)
                         e.Cancel = true;
-
                 }
                 catch (System.Exception ex)
                 {
-                    _reporter.ReportExeption(ex);
+                    _reporter?.ReportExeption(ex);
                     ed.WriteMessage($"\n Error during copy: {ex.Message} \n {ex.StackTrace}");
                 }
             }
@@ -94,26 +79,36 @@ namespace placing_block
         {
             using (sourceDb)
             {
+                string layerName = "techAnlage_" + blockName;
                 //sourceDb.ReadDwgFile(blockPath, FileOpenMode.OpenForReadAndReadShare, true, string.Empty);
 
-                var blockDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
-                if (blockDefId == null)
-                {
-                    _reporter.WriteText("The block doesn't exist in this drawing");
-                    return false;
-                }
+                //var blockDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
+                //if (blockDefId == null)
+                //{
+                //    _reporter.WriteText("The block doesn't exist in this drawing");
+                //    return false;
+                //}
 
-                using (Transaction tr = targetDb.TransactionManager.StartTransaction())
+                #region copy block into dwg
+
+                using (var trans = sourceDb.TransactionManager.StartOpenCloseTransaction())
                 {
-                    #region copy block into dwg
-                    var bt = tr.GetObject(targetDb.BlockTableId, OpenMode.ForRead) as BlockTable;
-                    var ms = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite) as BlockTableRecord;
+                    var layerTable = trans.GetObject(sourceDb.LayerTableId, OpenMode.ForRead) as LayerTable;
+                    if (!layerTable.Has(layerName)) return false;
+                    var layIds = new ObjectIdCollection();
+                    var blLayId = layerTable[layerName];
+                    layIds.Add(blLayId);
+
+                    ObjectId blDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
                     var blIds = new ObjectIdCollection();
+                    if (!blDefId.IsNull)
+                        blIds.Add(blDefId);
 
-                    if (blockDefId != null)
-                        blIds.Add(blockDefId);
-                    if (blIds.Count != 0)
+                    if (blIds.Count != 0 && layIds.Count != 0)
                     {
+                        var mapping = new IdMapping();
+                        sourceDb.WblockCloneObjects(layIds, targetDb.LayerTableId, mapping, DuplicateRecordCloning.Replace, false);
+
                         var idMapping = new IdMapping();
                         sourceDb.WblockCloneObjects(blIds, targetDb.BlockTableId, idMapping, DuplicateRecordCloning.Replace, false);
                     }
@@ -123,44 +118,60 @@ namespace placing_block
                         _reporter?.WriteText("\nNo block definition found.");
                         return false;
                     }
-                    #endregion
+                }
 
-                    #region set attributes to copied blocks
-                    List<Point3d> insertPoints = new List<Point3d>();
-                    List<AttributesModel> lstAttrData = new List<AttributesModel>();
-                    foreach (var b in validBlocks)
-                    {
-                        insertPoints.Add(new Point3d(b.X, b.Y, 0));
-                        lstAttrData.Add(
+                #endregion
 
-                            //new AttributesModel { Name = "PUNKTNUMMER", Value = b.PunktNum },
-                            //new AttributesModel { Name = "TA_ID", Value = b.TAId },
-                            new AttributesModel { Name = "TA_BEZEICHNUNG", Value = b.TABezeichnung }
-                            //new AttributesModel { Name = "TA_GRUPPE", Value = b.TAGruppe }
-                            //new AttributesModel { Name = "Geschoss", Value = b.Etage }
-                        );
-                    }
+                #region set attributes to copied blocks
+                List<Point3d> insertPoints = new List<Point3d>();
+                List<AttributesModel> lstAttrData = new List<AttributesModel>();
+                foreach (var b in validBlocks)
+                {
+                    insertPoints.Add(new Point3d(b.X, b.Y, 0));
+                    lstAttrData.Add(
 
+                        //new AttributesModel { Name = "PUNKTNUMMER", Value = b.PunktNum },
+                        //new AttributesModel { Name = "TA_ID", Value = b.TAId },
+                        new AttributesModel { Name = "TA_BEZEICHNUNG", Value = b.TABezeichnung }
+                        //new AttributesModel { Name = "TA_GRUPPE", Value = b.TAGruppe }
+                        //new AttributesModel { Name = "Geschoss", Value = b.Etage }
+                    );
+                }
+
+                List<Point3d> transformPoints = TransformCoordinates(insertPoints);
+                using (Transaction tr = targetDb.TransactionManager.StartTransaction())
+                {
                     var blBtrID = AcadUtils.GetBlockDef(targetDb, blockName);
-                    if (blBtrID.IsNull) return false;
-                    for (int i = 0; i < insertPoints.Count; i++)
+                    var bt = tr.GetObject(targetDb.BlockTableId, OpenMode.ForRead) as BlockTable;
+                    var ms = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite) as BlockTableRecord;
+
+                    try
                     {
-                        var newBr = new BlockReference(insertPoints[i], blBtrID);
-                        ms.AppendEntity(newBr);
-                        tr.AddNewlyCreatedDBObject(newBr, true);
-
-                        using (var blDef = tr.GetObject(blBtrID, OpenMode.ForRead) as BlockTableRecord)
+                        if (blBtrID.IsNull) return false;
+                        for (int i = 0; i < insertPoints.Count; i++)
                         {
-                            if (blDef == null || !blDef.HasAttributeDefinitions)
-                                return false;
+                            var newBr = new BlockReference(transformPoints[i], blBtrID);
+                            newBr.Layer = layerName;
+                            ms.AppendEntity(newBr);
+                            tr.AddNewlyCreatedDBObject(newBr, true);
 
-                            SetAttributeData(tr, blDef, newBr, lstAttrData);
+                            using (var blDef = tr.GetObject(blBtrID, OpenMode.ForRead) as BlockTableRecord)
+                            {
+                                if (blDef == null || !blDef.HasAttributeDefinitions)
+                                    return false;
+
+                                SetAttributeData(tr, blDef, newBr, lstAttrData);
+                            }
                         }
-                    }
-                    #endregion
+                        #endregion
 
-                    ms.Dispose();
-                    tr.Commit();
+                        ms.Dispose();
+                        tr.Commit();
+                    }
+                    catch (System.Exception ex)
+                    {
+                        _reporter?.ReportExeption(ex);
+                    }
                 }
             }
             return true;
@@ -171,7 +182,6 @@ namespace placing_block
             if ((bd == null) || !bd.HasAttributeDefinitions)
                 return;
 
-            //attribute auslesen
             if (bRef != null)
             {
                 Autodesk.AutoCAD.DatabaseServices.AttributeCollection attrColl = bRef.AttributeCollection;
@@ -201,6 +211,43 @@ namespace placing_block
                     }
                 }
             }
+        }
+
+        public List<Point3d> TransformCoordinates(List<Point3d> originalCoords)
+        {
+            List<Point3d> rotatedCoords = new List<Point3d>();
+
+            // 90° Rotation im Uhrzeigersinn: (x,y) -> (y, -x)
+            foreach (Point3d coord in originalCoords)
+            {
+                double newX = coord.Y;
+                double newY = -coord.X;
+                rotatedCoords.Add(new Point3d(newX, newY, 0));
+            }
+
+            // Finde minimalen X-Wert und Y-Wert für Offset-Berechnung
+            double minY = double.MaxValue;
+            double minX = double.MaxValue;
+            foreach (Point3d coord in rotatedCoords)
+            {
+                if (coord.Y < minY)
+                    minY = coord.Y;
+
+                if (coord.X < minX)
+                    minX = coord.X;
+            }
+
+            // Berechne Offset um alle Y-Werte und X-Werte positiv zu machen
+            double yOffset = Math.Abs(minY);
+            double xOffset = Math.Abs(minX); //- 7.21; 
+
+            List<Point3d> finalCoords = new List<Point3d>();
+            foreach (Point3d coord in rotatedCoords)
+            {
+                //finalCoords.Add(new Point3d(coord.X - 12.01, coord.Y + yOffset, 0));
+                finalCoords.Add(new Point3d(coord.X + xOffset, coord.Y + yOffset, 0));
+            }
+            return finalCoords;
         }
 
         [CommandMethod("RegisterApp", CommandFlags.Session)]
@@ -233,7 +280,7 @@ namespace placing_block
             }
             catch (System.Exception ex)
             {
-                _reporter.ReportExeption(ex);
+                _reporter?.ReportExeption(ex);
                 MessageBox.Show(ex.Message + "\n" + ex.StackTrace);
             }
         }

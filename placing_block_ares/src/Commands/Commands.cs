@@ -29,7 +29,6 @@ namespace placing_block
             formDlg.Show();
         }
 
-        //public void PlaceBlocks()
         public void PlaceBlocks(string coordPath, string blockPath, string blockName, string etageInput, object sender, DoWorkEventArgs e)
         {
             _ctrl = e.Argument as Control;
@@ -43,45 +42,34 @@ namespace placing_block
             }
 
             var targetDoc = Teigha.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
-            var targetDb = targetDoc.Database;
-            var ed = targetDoc.Editor;
 
             using (targetDoc.LockDocument())
             {
+                var targetDb = targetDoc.Database;
+                var ed = targetDoc.Editor;
                 var blockData = exReader.ReadInputData(coordPath, blockName, etageInput);
                 var validBlocks = blockData.Where(b => b.X > 0 && b.Y > 0 && b.Etage == etageInput)
                                           .ToList();
-                //var firstBlocks = new List<BlockDataModel>();
-
-                //for (int i = 0; i < 50; i++)
-                //{
-                //    if (validBlocks[i] != null)
-                //    {
-                //        firstBlocks.Add(validBlocks[i]);
-                //    }
-                //}
-                //55.936 BE.95 - E.206 Brandschutztüren
-
                 try
                 {
                     bool success = false;
-
+                    bw.ReportProgress(0);
                     System.Windows.Forms.Application.DoEvents();
-                    Thread.Sleep(50);
                     Invoker.Invoke(() =>
                     {
                         Database sourceDb = AcadUtils.OpenDb(blockPath, _reporter);
                         if (sourceDb == null) return;
                         success = InsertProcess(blockName, targetDb, sourceDb, validBlocks);
                     }, _ctrl);
-
+                    bw.ReportProgress(50);
+                    Thread.Sleep(50);
+                    bw.ReportProgress(100);
                     if (bw.CancellationPending == true || success == false)
                         e.Cancel = true;
-
                 }
                 catch (System.Exception ex)
                 {
-                    _reporter.ReportExeption(ex);
+                    _reporter?.ReportExeption(ex);
                     ed.WriteMessage($"\n Error during copy: {ex.Message} \n {ex.StackTrace}");
                 }
             }
@@ -145,8 +133,8 @@ namespace placing_block
                         //new AttributesModel { Name = "PUNKTNUMMER", Value = b.PunktNum },
                         //new AttributesModel { Name = "TA_ID", Value = b.TAId },
                         new AttributesModel { Name = "TA_BEZEICHNUNG", Value = b.TABezeichnung }
-                    //new AttributesModel { Name = "TA_GRUPPE", Value = b.TAGruppe }
-                    //new AttributesModel { Name = "Geschoss", Value = b.Etage }
+                        //new AttributesModel { Name = "TA_GRUPPE", Value = b.TAGruppe }
+                        //new AttributesModel { Name = "Geschoss", Value = b.Etage }
                     );
                 }
 
@@ -182,10 +170,9 @@ namespace placing_block
                     }
                     catch (System.Exception ex)
                     {
-                        _reporter.ReportExeption(ex);
+                        _reporter?.ReportExeption(ex);
                     }
                 }
-
             }
             return true;
         }
@@ -195,7 +182,6 @@ namespace placing_block
             if ((bd == null) || !bd.HasAttributeDefinitions)
                 return;
 
-            //attribute auslesen
             if (bRef != null)
             {
                 Teigha.DatabaseServices.AttributeCollection attrColl = bRef.AttributeCollection;
@@ -251,11 +237,10 @@ namespace placing_block
                     minX = coord.X;
             }
 
-            // Berechne Offset um alle Y-Werte un X-Werte positiv zu machen
+            // Berechne Offset um alle Y-Werte und X-Werte positiv zu machen
             double yOffset = Math.Abs(minY);
             double xOffset = Math.Abs(minX); //- 7.21; 
 
-            //Zuerst funktioniert es ungefähr
             List<Point3d> finalCoords = new List<Point3d>();
             foreach (Point3d coord in rotatedCoords)
             {
@@ -295,7 +280,7 @@ namespace placing_block
             }
             catch (System.Exception ex)
             {
-                _reporter.ReportExeption(ex);
+                _reporter?.ReportExeption(ex);
                 MessageBox.Show(ex.Message + "\n" + ex.StackTrace);
             }
         }

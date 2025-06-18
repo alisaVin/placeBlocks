@@ -8,9 +8,8 @@ namespace placing_block.src
 {
     public partial class FormDialog : Form
     {
-        IReporter _reporter;
-        Commands _cmd = new Commands();
-
+        Reporter _reporter;
+        Commands _cmd;
         public FormDialog()
         {
             InitializeComponent();
@@ -19,6 +18,8 @@ namespace placing_block.src
             bw.RunWorkerCompleted += Bw_RunWorkerCompleted;
             bw.WorkerReportsProgress = true;
             bw.WorkerSupportsCancellation = true;
+            _cmd = new Commands();
+            _reporter = new Reporter(richTextBox, this);
 
             if (Path.IsPathRooted(Properties.Settings.Default.LastCoordinates))
                 coordPath.Text = Properties.Settings.Default.LastCoordinates;
@@ -75,28 +76,46 @@ namespace placing_block.src
 
         private void insertBtn_Click(object sender, EventArgs e)
         {
+            _reporter.ClearText();
+            errorProv.Clear();
+
             if (string.IsNullOrEmpty(coordPath.Text))
-            {
-                errorProvCoord.SetError(this.coordPath, "The diractory path is required");
-            }
-            else if (string.IsNullOrEmpty(blockPath.Text))
-            {
-                errorProvBlock.SetError(this.blockPath, "The block file path is required");
-            }
-            else
-            {
-                insertBtn.Enabled = false;
-                canselBtn.Enabled = true;
-                errorProvBlock.Clear();
-                errorProvCoord.Clear();
-                bw.RunWorkerAsync(this);
-            }
+                errorProv.SetError(this.coordPath, "Geben Sie den Pfad zur Excel-Datei");
+
+            if (string.IsNullOrEmpty(blockPath.Text))
+                errorProv.SetError(this.blockPath, "Geben Sie den Pfad zur DWG-Datei");
+
+            if (string.IsNullOrEmpty(blockName.Text))
+                errorProv.SetError(this.blockName, "Geben Sie den Blocknamen");
+
+            if (string.IsNullOrEmpty(etageInput.Text))
+                errorProv.SetError(this.etageInput, "Geben Sie die Bezeichnung des Geschosses z. B. EG");
+
+            insertBtn.Enabled = false;
+            canselBtn.Enabled = true;
+            progressBar.Visible = true;
+            progressBar.Style = ProgressBarStyle.Marquee;
+            bw.RunWorkerAsync(this);
         }
 
         private void canselBtn_Click(object sender, EventArgs e)
         {
             if (bw.IsBusy)
                 bw.CancelAsync();
+        }
+
+        private void Bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            progressBar.Value = e.ProgressPercentage;
+        }
+
+        private void Bw_DoWork(object sender, DoWorkEventArgs e)
+        {
+            string coordRoot = coordPath.Text;
+            string blockRoot = blockPath.Text;
+            string blName = blockName.Text;
+            string etage = etageInput.Text;
+            _cmd.PlaceBlocks(coordRoot, blockRoot, blName, etage, sender, e);
         }
 
         private void Bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -111,30 +130,18 @@ namespace placing_block.src
             if (e.Cancelled == true)
             {
                 _reporter?.ClearText();
-                _reporter?.WriteText("Das Prozess wurde abgebrochen.");
+                _reporter?.WriteText("Der Prozess wurde abgebrochen.");
                 insertBtn.Enabled = true;
                 canselBtn.Enabled = false;
                 return;
             }
             _reporter?.ClearText();
-            _reporter?.WriteText("Das Prozess wurde erfolgreich abgeschlossen.");
+            _reporter?.WriteText("Der Prozess wurde erfolgreich abgeschlossen.");
             Thread.Sleep(100);
             insertBtn.Enabled = true;
             canselBtn.Enabled = false;
+            progressBar.Visible = false;
         }
-
-        private void Bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-        }
-
-        private void Bw_DoWork(object sender, DoWorkEventArgs e)
-        {
-            string coordRoot = coordPath.Text;
-            string blockRoot = blockPath.Text;
-            string etage = etageInput.Text;
-            _cmd.PlaceBlocks(blockRoot, coordRoot, etage, sender, e);
-        }
-
 
         private void FormDialog_Load(object sender, EventArgs e)
         {
