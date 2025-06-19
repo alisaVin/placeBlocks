@@ -1,13 +1,12 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
-using placing_block.src.Models;
+using Models;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace placing_block.src
+namespace ViewModels
 {
-
     public class ExcelReader
     {
         public List<BlockDataModel> ReadInputData(string coordPathFile, string blockName, string etage)

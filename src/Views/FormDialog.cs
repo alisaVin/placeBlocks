@@ -1,15 +1,20 @@
-﻿using System;
+﻿
+using Commands;
+using placing_block.Properties;
+using System;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
+using ViewModels;
 
-namespace placing_block.src
+
+namespace Views
 {
     public partial class FormDialog : Form
     {
         Reporter _reporter;
-        Commands _cmd;
+        ACADCommands _cmd;
         public FormDialog()
         {
             InitializeComponent();
@@ -18,16 +23,16 @@ namespace placing_block.src
             bw.RunWorkerCompleted += Bw_RunWorkerCompleted;
             bw.WorkerReportsProgress = true;
             bw.WorkerSupportsCancellation = true;
-            _cmd = new Commands();
+            _cmd = new ACADCommands();
             _reporter = new Reporter(richTextBox, this);
 
-            if (Path.IsPathRooted(Properties.Settings.Default.LastCoordinates))
-                coordPath.Text = Properties.Settings.Default.LastCoordinates;
+            if (Path.IsPathRooted(Settings.Default.LastCoordinates))
+                coordPath.Text = Settings.Default.LastCoordinates;
             else
                 coordPath.Text = string.Empty;
 
-            if (Path.IsPathRooted(Properties.Settings.Default.LastBlock))
-                blockPath.Text = Properties.Settings.Default.LastBlock;
+            if (Path.IsPathRooted(Settings.Default.LastBlock))
+                blockPath.Text = Settings.Default.LastBlock;
             else
                 blockPath.Text = string.Empty;
         }
@@ -44,9 +49,9 @@ namespace placing_block.src
                 if (openFileDialogExcel.ShowDialog() == DialogResult.OK)
                 {
                     if (!string.IsNullOrEmpty(openFileDialogExcel.FileName))
-                        Properties.Settings.Default.LastCoordinates = openFileDialogExcel.FileName;
+                        Settings.Default.LastCoordinates = openFileDialogExcel.FileName;
 
-                    Properties.Settings.Default.Save();
+                    Settings.Default.Save();
                     coordPath.Text = openFileDialogExcel.FileName;
                     var fileStream = openFileDialogExcel.OpenFile();
                 }
@@ -65,9 +70,9 @@ namespace placing_block.src
                 if (openFileDialogDwg.ShowDialog() == DialogResult.OK)
                 {
                     if (!string.IsNullOrEmpty(openFileDialogDwg.FileName))
-                        Properties.Settings.Default.LastBlock = openFileDialogDwg.FileName;
+                        Settings.Default.LastBlock = openFileDialogDwg.FileName;
 
-                    Properties.Settings.Default.Save();
+                    Settings.Default.Save();
                     blockPath.Text = openFileDialogDwg.FileName;
                     var fileStream = openFileDialogDwg.OpenFile();
                 }
@@ -145,19 +150,19 @@ namespace placing_block.src
 
         private void FormDialog_Load(object sender, EventArgs e)
         {
-            Properties.Settings.Default.WindowWidth = this.Width;
-            Properties.Settings.Default.WindowHeight = this.Height;
-            Properties.Settings.Default.WindowLocation = this.Location;
-            Properties.Settings.Default.LastCoordinates = this.coordPath.Text;
-            Properties.Settings.Default.LastBlock = blockPath.Text;
-            Properties.Settings.Default.Save();
+            Settings.Default.WindowWidth = this.Width;
+            Settings.Default.WindowHeight = this.Height;
+            Settings.Default.WindowLocation = this.Location;
+            Settings.Default.LastCoordinates = this.coordPath.Text;
+            Settings.Default.LastBlock = blockPath.Text;
+            Settings.Default.Save();
         }
 
         private void FormDialog_FormClosing(object sender, FormClosingEventArgs e)
         {
-            Properties.Settings.Default.WindowWidth = this.Width;
-            Properties.Settings.Default.WindowHeight = this.Height;
-            Properties.Settings.Default.WindowLocation = this.Location;
+            Settings.Default.WindowWidth = this.Width;
+            Settings.Default.WindowHeight = this.Height;
+            Settings.Default.WindowLocation = this.Location;
         }
     }
 }

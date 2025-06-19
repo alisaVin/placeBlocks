@@ -2,10 +2,10 @@
 using Autodesk.AutoCAD.DatabaseServices;
 using System;
 using System.IO;
-using ViewModels;
 using acApp = Autodesk.AutoCAD.ApplicationServices.Application;
+using ViewModels;
 
-namespace Commands
+namespace ACADCommands
 {
     public class AcadUtils
     {

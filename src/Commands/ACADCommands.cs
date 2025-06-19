@@ -1,27 +1,27 @@
 ﻿using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Runtime;
-using Microsoft.Win32;
-using placing_block.src;
-using placing_block.src.Models;
+using Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
+using ViewModels;
+using Views;
 
 
-namespace placing_block
+namespace Commands
 {
-    public class Commands
+    public class ACADCommands
     {
         Control _ctrl;
-        ExcelReader exReader = new ExcelReader();
-        IReporter _reporter;
+        readonly ExcelReader exReader = new ExcelReader();
+        readonly IReporter _reporter;
 
+        #region Place block command
         [CommandMethod("PLACEBLOCK", CommandFlags.Session)]
         public void Demo()
         {
@@ -249,40 +249,57 @@ namespace placing_block
             }
             return finalCoords;
         }
+        #endregion
 
-        [CommandMethod("RegisterApp", CommandFlags.Session)]
-        public void RegisterApp()
+        #region Register commands
+        [CommandMethod("RegApp", CommandFlags.Session)]
+        public void RegisterAppOnDemand()
         {
-            try
-            {
-                string sAppName = "PlacingBlock";
-
-                string sProdKey = HostApplicationServices.Current.UserRegistryProductRootKey;
-                Microsoft.Win32.RegistryKey regAcadProdKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(sProdKey);
-                Microsoft.Win32.RegistryKey regAcadAppKey = regAcadProdKey.OpenSubKey("Applications", true);
-
-                using (regAcadAppKey)
-                {
-                    string[] subKeys = regAcadAppKey.GetSubKeyNames();
-                    foreach (string subKey in subKeys)
-                    {
-                        if (subKey.Equals(sAppName))
-                            return;
-                    }
-                    string sAssemblyPath = Assembly.GetExecutingAssembly().Location;
-
-                    Microsoft.Win32.RegistryKey regAppAddInKey = regAcadAppKey.CreateSubKey(sAppName);
-                    regAppAddInKey.SetValue("DESCRIPTION", sAppName, RegistryValueKind.String);
-                    regAppAddInKey.SetValue("LOADCTRLS", 2, RegistryValueKind.DWord);
-                    regAppAddInKey.SetValue("LOADER", sAssemblyPath, RegistryValueKind.String);
-                    regAppAddInKey.SetValue("MANAGED", 1, RegistryValueKind.DWord);
-                }
-            }
-            catch (System.Exception ex)
-            {
-                _reporter?.ReportExeption(ex);
-                MessageBox.Show(ex.Message + "\n" + ex.StackTrace);
-            }
+            DemandLoading.RegisterForDemandLoading();
         }
+
+        [CommandMethod("UnregApp", CommandFlags.Session)]
+        public void UnregisterApp()
+        {
+            DemandLoading.UnregisterForDemandLoading();
+        }
+        #endregion
+
+        //#region Register command
+        //[CommandMethod("RegisterApp", CommandFlags.Session)]
+        //public void RegisterAppM()
+        //{
+        //    try
+        //    {
+        //        string sAppName = "PlacingBlock";
+
+        //        string sProdKey = HostApplicationServices.Current.UserRegistryProductRootKey;
+        //        Microsoft.Win32.RegistryKey regAcadProdKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(sProdKey);
+        //        Microsoft.Win32.RegistryKey regAcadAppKey = regAcadProdKey.OpenSubKey("Applications", true);
+
+        //        using (regAcadAppKey)
+        //        {
+        //            string[] subKeys = regAcadAppKey.GetSubKeyNames();
+        //            foreach (string subKey in subKeys)
+        //            {
+        //                if (subKey.Equals(sAppName))
+        //                    return;
+        //            }
+        //            string sAssemblyPath = Assembly.GetExecutingAssembly().Location;
+
+        //            Microsoft.Win32.RegistryKey regAppAddInKey = regAcadAppKey.CreateSubKey(sAppName);
+        //            regAppAddInKey.SetValue("DESCRIPTION", sAppName, RegistryValueKind.String);
+        //            regAppAddInKey.SetValue("LOADCTRLS", 2, RegistryValueKind.DWord);
+        //            regAppAddInKey.SetValue("LOADER", sAssemblyPath, RegistryValueKind.String);
+        //            regAppAddInKey.SetValue("MANAGED", 1, RegistryValueKind.DWord);
+        //        }
+        //    }
+        //    catch (System.Exception ex)
+        //    {
+        //        _reporter?.ReportExeption(ex);
+        //        MessageBox.Show(ex.Message + "\n" + ex.StackTrace);
+        //    }
+        //}
+        //#endregion
     }
 }

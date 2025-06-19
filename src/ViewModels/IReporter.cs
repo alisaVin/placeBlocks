@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace placing_block.src
+namespace ViewModels
 {
     public interface IReporter
     {

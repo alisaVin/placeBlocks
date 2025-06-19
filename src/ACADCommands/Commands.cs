@@ -1,25 +1,26 @@
-﻿using placing_block.src;
-using placing_block.src.Models;
+﻿using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.Geometry;
+using Autodesk.AutoCAD.Runtime;
+using Microsoft.Win32;
+using placing_block.src;
+using Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
-using Teigha.DatabaseServices;
-using Teigha.Geometry;
-using Teigha.Runtime;
 
 
-namespace placing_block
+namespace Commands
 {
     public class Commands
     {
         Control _ctrl;
         ExcelReader exReader = new ExcelReader();
         IReporter _reporter;
-
 
         #region Place block command
         [CommandMethod("PLACEBLOCK", CommandFlags.Session)]
@@ -41,7 +42,7 @@ namespace placing_block
                 return;
             }
 
-            var targetDoc = Teigha.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
+            var targetDoc = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
 
             using (targetDoc.LockDocument())
             {
@@ -184,7 +185,7 @@ namespace placing_block
 
             if (bRef != null)
             {
-                Teigha.DatabaseServices.AttributeCollection attrColl = bRef.AttributeCollection;
+                Autodesk.AutoCAD.DatabaseServices.AttributeCollection attrColl = bRef.AttributeCollection;
                 foreach (ObjectId adId in bd)
                 {
                     var adObj = tr.GetObject(adId, OpenMode.ForWrite); //!!!
@@ -217,6 +218,7 @@ namespace placing_block
         {
             List<Point3d> rotatedCoords = new List<Point3d>();
 
+            // 90° Rotation im Uhrzeigersinn: (x,y) -> (y, -x)
             foreach (Point3d coord in originalCoords)
             {
                 double newX = coord.Y;
@@ -224,6 +226,7 @@ namespace placing_block
                 rotatedCoords.Add(new Point3d(newX, newY, 0));
             }
 
+            // Finde minimalen X-Wert und Y-Wert für Offset-Berechnung
             double minY = double.MaxValue;
             double minX = double.MaxValue;
             foreach (Point3d coord in rotatedCoords)
@@ -249,41 +252,41 @@ namespace placing_block
         }
         #endregion
 
-        //#region Register App Command
-        //[CommandMethod("RegisterApp", CommandFlags.Session)]
-        //public void RegisterApp()
-        //{
-        //    try
-        //    {
-        //        string sAppName = "PlacingBlock";
+        #region Register command
+        [CommandMethod("RegisterApp", CommandFlags.Session)]
+        public void RegisterApp()
+        {
+            try
+            {
+                string sAppName = "PlacingBlock";
 
-        //        string sProdKey = HostApplicationServices.Current.UserRegistryProductRootKey;
-        //        Microsoft.Win32.RegistryKey regAcadProdKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(sProdKey);
-        //        Microsoft.Win32.RegistryKey regAcadAppKey = regAcadProdKey.OpenSubKey("Applications", true);
+                string sProdKey = HostApplicationServices.Current.UserRegistryProductRootKey;
+                Microsoft.Win32.RegistryKey regAcadProdKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(sProdKey);
+                Microsoft.Win32.RegistryKey regAcadAppKey = regAcadProdKey.OpenSubKey("Applications", true);
 
-        //        using (regAcadAppKey)
-        //        {
-        //            string[] subKeys = regAcadAppKey.GetSubKeyNames();
-        //            foreach (string subKey in subKeys)
-        //            {
-        //                if (subKey.Equals(sAppName))
-        //                    return;
-        //            }
-        //            string sAssemblyPath = Assembly.GetExecutingAssembly().Location;
+                using (regAcadAppKey)
+                {
+                    string[] subKeys = regAcadAppKey.GetSubKeyNames();
+                    foreach (string subKey in subKeys)
+                    {
+                        if (subKey.Equals(sAppName))
+                            return;
+                    }
+                    string sAssemblyPath = Assembly.GetExecutingAssembly().Location;
 
-        //            Microsoft.Win32.RegistryKey regAppAddInKey = regAcadAppKey.CreateSubKey(sAppName);
-        //            regAppAddInKey.SetValue("DESCRIPTION", sAppName, RegistryValueKind.String);
-        //            regAppAddInKey.SetValue("LOADCTRLS", 2, RegistryValueKind.DWord);
-        //            regAppAddInKey.SetValue("LOADER", sAssemblyPath, RegistryValueKind.String);
-        //            regAppAddInKey.SetValue("MANAGED", 1, RegistryValueKind.DWord);
-        //        }
-        //    }
-        //    catch (System.Exception ex)
-        //    {
-        //        _reporter?.ReportExeption(ex);
-        //        MessageBox.Show(ex.Message + "\n" + ex.StackTrace);
-        //    }
-        //}
-        //#endregion
+                    Microsoft.Win32.RegistryKey regAppAddInKey = regAcadAppKey.CreateSubKey(sAppName);
+                    regAppAddInKey.SetValue("DESCRIPTION", sAppName, RegistryValueKind.String);
+                    regAppAddInKey.SetValue("LOADCTRLS", 2, RegistryValueKind.DWord);
+                    regAppAddInKey.SetValue("LOADER", sAssemblyPath, RegistryValueKind.String);
+                    regAppAddInKey.SetValue("MANAGED", 1, RegistryValueKind.DWord);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                _reporter?.ReportExeption(ex);
+                MessageBox.Show(ex.Message + "\n" + ex.StackTrace);
+            }
+        }
+        #endregion
     }
 }
