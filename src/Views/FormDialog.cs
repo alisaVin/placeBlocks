@@ -1,5 +1,4 @@
-﻿
-using Commands;
+﻿using Commands;
 using placing_block.Properties;
 using System;
 using System.ComponentModel;
@@ -138,6 +137,7 @@ namespace Views
                 _reporter?.WriteText("Der Prozess wurde abgebrochen.");
                 insertBtn.Enabled = true;
                 canselBtn.Enabled = false;
+                progressBar.Visible = false;
                 return;
             }
             _reporter?.ClearText();

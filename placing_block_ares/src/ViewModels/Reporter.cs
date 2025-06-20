@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 
-namespace placing_block.src
+namespace ViewModels
 {
     public class Reporter : IReporter
     {

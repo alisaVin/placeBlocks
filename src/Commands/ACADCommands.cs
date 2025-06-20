@@ -80,14 +80,6 @@ namespace Commands
             using (sourceDb)
             {
                 string layerName = "techAnlage_" + blockName;
-                //sourceDb.ReadDwgFile(blockPath, FileOpenMode.OpenForReadAndReadShare, true, string.Empty);
-
-                //var blockDefId = AcadUtils.GetBlockDef(sourceDb, blockName);
-                //if (blockDefId == null)
-                //{
-                //    _reporter.WriteText("The block doesn't exist in this drawing");
-                //    return false;
-                //}
 
                 #region copy block into dwg
 
@@ -217,35 +209,22 @@ namespace Commands
         {
             List<Point3d> rotatedCoords = new List<Point3d>();
 
-            // 90° Rotation im Uhrzeigersinn: (x,y) -> (y, -x)
+            // -90° Rotation im Uhrzeigersinn: (x,y) -> (-y, x)
             foreach (Point3d coord in originalCoords)
             {
-                double newX = coord.Y;
-                double newY = -coord.X;
+                double newX = -coord.Y;
+                double newY = coord.X;
                 rotatedCoords.Add(new Point3d(newX, newY, 0));
             }
-
-            // Finde minimalen X-Wert und Y-Wert für Offset-Berechnung
-            double minY = double.MaxValue;
+            // Finden minimalen X-Wert für Offset-Berechnung
             double minX = double.MaxValue;
-            foreach (Point3d coord in rotatedCoords)
-            {
-                if (coord.Y < minY)
-                    minY = coord.Y;
-
-                if (coord.X < minX)
-                    minX = coord.X;
-            }
-
-            // Berechne Offset um alle Y-Werte und X-Werte positiv zu machen
-            double yOffset = Math.Abs(minY);
-            double xOffset = Math.Abs(minX); //- 7.21; 
+            // Offset der X berechnen
+            double xOffset = Math.Abs(minX);
 
             List<Point3d> finalCoords = new List<Point3d>();
             foreach (Point3d coord in rotatedCoords)
             {
-                //finalCoords.Add(new Point3d(coord.X - 12.01, coord.Y + yOffset, 0));
-                finalCoords.Add(new Point3d(coord.X + xOffset, coord.Y + yOffset, 0));
+                finalCoords.Add(new Point3d(coord.X + xOffset, coord.Y, 0));
             }
             return finalCoords;
         }

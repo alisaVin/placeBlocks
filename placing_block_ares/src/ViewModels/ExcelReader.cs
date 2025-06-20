@@ -1,11 +1,12 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
-using placing_block.src.Models;
+using Models;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace placing_block.src
+
+namespace ViewModels
 {
 
     public class ExcelReader
@@ -17,7 +18,7 @@ namespace placing_block.src
             {
                 WorkbookPart workbookPart = doc.WorkbookPart;
                 var sheet = workbookPart.Workbook.Descendants<Sheet>()
-                                    .First(s => s.Name == "Technische Anlage"); // Textbox dafür eingeben
+                                    .First(s => s.Name == "Technische Anlage"); // Textbox dafür eingeben falls nötig
 
                 WorksheetPart worksheetPart = workbookPart.GetPartById(sheet.Id) as WorksheetPart;
                 var rows = worksheetPart.Worksheet.GetFirstChild<SheetData>()

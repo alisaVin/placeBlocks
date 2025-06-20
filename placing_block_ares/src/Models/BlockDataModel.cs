@@ -1,4 +1,4 @@
-﻿namespace placing_block.src.Models
+﻿namespace Models
 {
     public class BlockDataModel
     {

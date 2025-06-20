@@ -2,9 +2,10 @@
 using System.IO;
 using Teigha.ApplicationServices;
 using Teigha.DatabaseServices;
+using ViewModels;
 using aresApp = Teigha.ApplicationServices.Application;
 
-namespace placing_block.src
+namespace Models
 {
     public class AcadUtils
     {
