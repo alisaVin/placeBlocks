@@ -61,6 +61,7 @@ namespace Commands
                         if (sourceDb == null) return;
                         success = InsertProcess(blockName, targetDb, sourceDb, validBlocks);
                     }, _ctrl);
+
                     bw.ReportProgress(50);
                     Thread.Sleep(50);
                     bw.ReportProgress(100);

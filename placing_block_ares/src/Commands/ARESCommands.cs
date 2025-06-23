@@ -54,7 +54,7 @@ namespace Commands
                 {
                     bool success = false;
                     bw.ReportProgress(0);
-                    //System.Windows.Forms.Application.DoEvents();
+                    System.Windows.Forms.Application.DoEvents();
                     Invoker.Invoke(() =>
                     {
                         Database sourceDb = AcadUtils.OpenDb(blockPath, _reporter);
