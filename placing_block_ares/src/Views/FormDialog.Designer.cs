@@ -44,7 +44,7 @@
             this.etageInput = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.blockName = new System.Windows.Forms.TextBox();
-            this.progressBar = new System.Windows.Forms.ProgressBar();
+            this._progressBar = new System.Windows.Forms.ProgressBar();
             ((System.ComponentModel.ISupportInitialize)(this.errorProv)).BeginInit();
             this.SuspendLayout();
             // 
@@ -68,7 +68,7 @@
             // 
             // coordPath
             // 
-            this.coordPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.coordPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.coordPath.Location = new System.Drawing.Point(31, 41);
             this.coordPath.Name = "coordPath";
@@ -77,7 +77,7 @@
             // 
             // blockPath
             // 
-            this.blockPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.blockPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.blockPath.Location = new System.Drawing.Point(31, 80);
             this.blockPath.Name = "blockPath";
@@ -86,7 +86,7 @@
             // 
             // insertBtn
             // 
-            this.insertBtn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.insertBtn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.insertBtn.Location = new System.Drawing.Point(376, 188);
             this.insertBtn.Name = "insertBtn";
@@ -98,7 +98,7 @@
             // 
             // richTextBox
             // 
-            this.richTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.richTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.richTextBox.Location = new System.Drawing.Point(31, 255);
             this.richTextBox.Name = "richTextBox";
@@ -108,7 +108,7 @@
             // 
             // selCoordBtn
             // 
-            this.selCoordBtn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.selCoordBtn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.selCoordBtn.Location = new System.Drawing.Point(476, 39);
             this.selCoordBtn.Name = "selCoordBtn";
@@ -154,7 +154,7 @@
             // 
             // etageInput
             // 
-            this.etageInput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.etageInput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.etageInput.Location = new System.Drawing.Point(31, 159);
             this.etageInput.Name = "etageInput";
@@ -172,29 +172,29 @@
             // 
             // blockName
             // 
-            this.blockName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.blockName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.blockName.Location = new System.Drawing.Point(31, 119);
             this.blockName.Name = "blockName";
             this.blockName.Size = new System.Drawing.Size(420, 20);
             this.blockName.TabIndex = 13;
             // 
-            // progressBar
+            // _progressBar
             // 
-            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this._progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar.Location = new System.Drawing.Point(31, 227);
-            this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(482, 15);
-            this.progressBar.TabIndex = 14;
-            this.progressBar.Visible = false;
+            this._progressBar.Location = new System.Drawing.Point(31, 227);
+            this._progressBar.Name = "_progressBar";
+            this._progressBar.Size = new System.Drawing.Size(482, 15);
+            this._progressBar.TabIndex = 14;
+            this._progressBar.Visible = false;
             // 
             // FormDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(534, 449);
-            this.Controls.Add(this.progressBar);
+            this.Controls.Add(this._progressBar);
             this.Controls.Add(this.blockName);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.etageInput);
@@ -236,6 +236,6 @@
         private System.Windows.Forms.TextBox etageInput;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox blockName;
-        private System.Windows.Forms.ProgressBar progressBar;
+        private System.Windows.Forms.ProgressBar _progressBar;
     }
 }

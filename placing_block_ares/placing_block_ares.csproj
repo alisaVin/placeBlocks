@@ -138,8 +138,9 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="src\Commands\AcadUtils.cs" />
-    <Compile Include="src\Commands\ARESCommands.cs" />
+    <Compile Include="src\Commands\ARESOperations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\Commands\CommandMethods.cs" />
     <Compile Include="src\Commands\DemandLoading.cs" />
     <Compile Include="src\Models\AttributesModel.cs" />
     <Compile Include="src\Models\BlockDataModel.cs" />

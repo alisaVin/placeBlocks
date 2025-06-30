@@ -14,12 +14,12 @@ namespace Models
             var db = new Database(false, true);
             try
             {
-                db.ReadDwgFile(filePath, FileOpenMode.OpenForReadAndAllShare/*FileShare.ReadWrite*/, true, null);
+                db.ReadDwgFile(filePath, FileShare.Read/*FileOpenMode.OpenForReadAndAllShare/*FileShare.ReadWrite*/, true, null);
                 return db;
             }
             catch (System.Exception ex)
             {
-                reporter.ClearText();
+                reporter?.ClearText();
                 if (reporter != null)
                     reporter.ReportExeption(ex);
 
@@ -107,6 +107,31 @@ namespace Models
                 bt.Dispose();
             }
             return retId;
+        }
+
+        public static ObjectId GetLayerId(Database db, string sLayerName, short colorIndex)
+        {
+            ObjectId layId = new ObjectId();
+
+            using (var tr = db.TransactionManager.StartTransaction())
+            {
+                var lt = tr.GetObject(db.LayerTableId, OpenMode.ForRead) as LayerTable;
+                layId = lt[sLayerName];
+
+                if (layId.IsNull)
+                {
+                    var ltr = new LayerTableRecord();
+                    ltr.Name = sLayerName;
+                    ltr.Color = Teigha.Colors.Color.FromColorIndex(Teigha.Colors.ColorMethod.None, colorIndex);
+                    lt.DisableUndoRecording(true);
+                    lt.UpgradeOpen();
+                    layId = lt.Add(ltr);
+                    tr.AddNewlyCreatedDBObject(ltr, true);
+                    lt.DisableUndoRecording(false);
+                }
+                tr.Commit();
+            }
+            return layId;
         }
     }
 }

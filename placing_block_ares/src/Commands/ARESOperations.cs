@@ -1,18 +1,18 @@
-﻿using Autodesk.AutoCAD.DatabaseServices;
-using Autodesk.AutoCAD.Geometry;
-using Models;
+﻿using Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
+using Teigha.DatabaseServices;
+using Teigha.Geometry;
 using ViewModels;
 
 
 namespace Commands
 {
-    public class ACADOperations
+    public class ARESOperations
     {
         Control _ctrl;
         ProgressBar _progressBar;
@@ -23,7 +23,7 @@ namespace Commands
         public string BlockName { get; set; }
         public string EtageInput { get; set; }
 
-        public ACADOperations(Control ctrl, ProgressBar progressBar, ViewModels.Reporter reporter)
+        public ARESOperations(Control ctrl, ProgressBar progressBar, ViewModels.Reporter reporter)
         {
             _ctrl = ctrl;
             _progressBar = progressBar;
@@ -46,8 +46,8 @@ namespace Commands
                 }
                 Invoker.Invoke(() =>
                 {
-                    Autodesk.AutoCAD.ApplicationServices.Application.MainWindow.Focus();
-                    var targetDoc = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
+                    Teigha.ApplicationServices.Application.MainWindow.Focus();
+                    var targetDoc = Teigha.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
                     var blockData = exReader.ReadInputData(CoordPath, BlockName, EtageInput);
                     var validBlocks = blockData.Where(b => b.X > 0 && b.Y > 0 && b.Etage == EtageInput)
                                               .ToList();
@@ -133,6 +133,7 @@ namespace Commands
             List<Point3d> transformPoints = TransformCoordinates(insertPoints);
             using (Transaction tr = targetDb.TransactionManager.StartTransaction())
             {
+                //tr.TransactionManager.QueueForGraphicsFlush();
                 var blBtrID = AcadUtils.GetBlockDef(targetDb, blockName);
                 var bt = tr.GetObject(targetDb.BlockTableId, OpenMode.ForRead) as BlockTable;
                 var ms = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite) as BlockTableRecord;
@@ -178,7 +179,7 @@ namespace Commands
 
             if (bRef != null)
             {
-                Autodesk.AutoCAD.DatabaseServices.AttributeCollection attrColl = bRef.AttributeCollection;
+                Teigha.DatabaseServices.AttributeCollection attrColl = bRef.AttributeCollection;
                 foreach (ObjectId adId in bd)
                 {
                     var adObj = tr.GetObject(adId, OpenMode.ForWrite); //!!!
@@ -233,3 +234,19 @@ namespace Commands
         #endregion
     }
 }
+
+//if (!layerTable.Has(layerName))
+//{
+//    using (var layTabRec = new LayerTableRecord())
+//    {
+//        layTabRec.IsOff = false;
+//        layTabRec.IsFrozen = false;
+//        layTabRec.IsLocked = false;
+//        layTabRec.Name = layerName;
+//        layTabRec.Color = Color.FromColorIndex(ColorMethod.ByAci, 7);
+//        layerTable.UpgradeOpen();
+//        layerTable.Add(layTabRec);
+//        tr.AddNewlyCreatedDBObject(layTabRec, true);
+//        targetDb.Clayer = layTabRec.Id;
+//    }
+//}

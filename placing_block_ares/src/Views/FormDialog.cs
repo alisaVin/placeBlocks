@@ -12,18 +12,14 @@ namespace Views
     public partial class FormDialog : Form
     {
         Reporter _reporter;
-        ARESCommands _cmd;
+        ARESOperations _cmd;
 
         public FormDialog()
         {
             InitializeComponent();
-            bw.DoWork += Bw_DoWork;
-            bw.ProgressChanged += Bw_ProgressChanged;
-            bw.RunWorkerCompleted += Bw_RunWorkerCompleted;
-            bw.WorkerReportsProgress = true;
-            bw.WorkerSupportsCancellation = true;
-            _cmd = new ARESCommands();
+            InitBackgroundWorker();
             _reporter = new Reporter(richTextBox, this);
+            _cmd = new ARESOperations(this, _progressBar, _reporter);
 
             if (Path.IsPathRooted(Settings.Default.LastCoordinates))
                 coordPath.Text = Settings.Default.LastCoordinates;
@@ -34,6 +30,15 @@ namespace Views
                 blockPath.Text = Settings.Default.LastBlock;
             else
                 blockPath.Text = string.Empty;
+        }
+
+        private void InitBackgroundWorker()
+        {
+            bw.DoWork += Bw_DoWork;
+            bw.ProgressChanged += Bw_ProgressChanged;
+            bw.RunWorkerCompleted += Bw_RunWorkerCompleted;
+            bw.WorkerReportsProgress = true;
+            bw.WorkerSupportsCancellation = true;
         }
 
         private void selCoordBtn_Click(object sender, EventArgs e)
@@ -97,9 +102,9 @@ namespace Views
 
             insertBtn.Enabled = false;
             canselBtn.Enabled = true;
-            progressBar.Visible = true;
-            progressBar.Style = ProgressBarStyle.Marquee;
-            bw.RunWorkerAsync(this);
+            _progressBar.Visible = true;
+            _progressBar.Style = ProgressBarStyle.Marquee;
+            bw.RunWorkerAsync(); //this
         }
 
         private void canselBtn_Click(object sender, EventArgs e)
@@ -110,24 +115,29 @@ namespace Views
 
         private void Bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            insertBtn.Enabled = false;
-            if (progressBar.InvokeRequired)
+            if (_progressBar.InvokeRequired)
             {
-                progressBar.Invoke(new Action(() => progressBar.Value = e.ProgressPercentage));
+                _progressBar.Invoke(new Action(() => _progressBar.Value = e.ProgressPercentage));
             }
             else
             {
-                progressBar.Value = e.ProgressPercentage;
+                _progressBar.Value = e.ProgressPercentage;
             }
         }
 
         private void Bw_DoWork(object sender, DoWorkEventArgs e)
         {
-            string coordRoot = coordPath.Text;
-            string blockRoot = blockPath.Text;
-            string blName = blockName.Text;
-            string etage = etageInput.Text;
-            _cmd.PlaceBlocks(coordRoot, blockRoot, blName, etage, sender, e);
+            //string coordRoot = coordPath.Text;
+            //string blockRoot = blockPath.Text;
+            //string blName = blockName.Text;
+            //string etage = etageInput.Text;
+            //_cmd.PlaceBlocks(coordRoot, blockRoot, blName, etage, sender, e);
+
+            _cmd.CoordPath = coordPath.Text;
+            _cmd.BlockName = blockName.Text;
+            _cmd.BlockPath = blockPath.Text;
+            _cmd.EtageInput = etageInput.Text;
+            _cmd.Start(sender, e);
         }
 
         private void Bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -138,7 +148,7 @@ namespace Views
                 _reporter?.ReportExeption(e.Error);
                 insertBtn.Enabled = true;
                 canselBtn.Enabled = false;
-                progressBar.Visible = false;
+                _progressBar.Visible = false;
                 return;
             }
 
@@ -148,7 +158,7 @@ namespace Views
                 _reporter?.WriteText("Der Prozess wurde abgebrochen.");
                 insertBtn.Enabled = true;
                 canselBtn.Enabled = false;
-                progressBar.Visible = false;
+                _progressBar.Visible = false;
                 return;
             }
             _reporter?.ClearText();
@@ -156,7 +166,7 @@ namespace Views
             Thread.Sleep(100);
             insertBtn.Enabled = true;
             canselBtn.Enabled = false;
-            progressBar.Visible = false;
+            _progressBar.Visible = false;
         }
 
         private void FormDialog_Load(object sender, EventArgs e)

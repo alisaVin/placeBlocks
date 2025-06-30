@@ -13,7 +13,7 @@ namespace Views
     public partial class FormDialog : Form
     {
         Reporter _reporter;
-        ACADCommands _cmd;
+        ACADOperations _cmd;
         public FormDialog()
         {
             InitializeComponent();
@@ -22,7 +22,7 @@ namespace Views
             bw.RunWorkerCompleted += Bw_RunWorkerCompleted;
             bw.WorkerReportsProgress = true;
             bw.WorkerSupportsCancellation = true;
-            _cmd = new ACADCommands();
+            _cmd = new ACADOperations(this, _progressBar, _reporter);
             _reporter = new Reporter(richTextBox, this);
 
             if (Path.IsPathRooted(Settings.Default.LastCoordinates))
@@ -97,8 +97,8 @@ namespace Views
 
             insertBtn.Enabled = false;
             canselBtn.Enabled = true;
-            progressBar.Visible = true;
-            progressBar.Style = ProgressBarStyle.Marquee;
+            _progressBar.Visible = true;
+            _progressBar.Style = ProgressBarStyle.Marquee;
             bw.RunWorkerAsync(this);
         }
 
@@ -110,16 +110,21 @@ namespace Views
 
         private void Bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            progressBar.Value = e.ProgressPercentage;
+            _progressBar.Value = e.ProgressPercentage;
         }
 
         private void Bw_DoWork(object sender, DoWorkEventArgs e)
         {
-            string coordRoot = coordPath.Text;
-            string blockRoot = blockPath.Text;
-            string blName = blockName.Text;
-            string etage = etageInput.Text;
-            _cmd.PlaceBlocks(coordRoot, blockRoot, blName, etage, sender, e);
+            //string coordRoot = coordPath.Text;
+            //string blockRoot = blockPath.Text;
+            //string blName = blockName.Text;
+            //string etage = etageInput.Text;
+            //_cmd.PlaceBlocks(coordRoot, blockRoot, blName, etage, sender, e);
+            _cmd.CoordPath = coordPath.Text;
+            _cmd.BlockName = blockName.Text;
+            _cmd.BlockPath = blockPath.Text;
+            _cmd.EtageInput = etageInput.Text;
+            _cmd.Start(sender, e);
         }
 
         private void Bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -137,7 +142,7 @@ namespace Views
                 _reporter?.WriteText("Der Prozess wurde abgebrochen.");
                 insertBtn.Enabled = true;
                 canselBtn.Enabled = false;
-                progressBar.Visible = false;
+                _progressBar.Visible = false;
                 return;
             }
             _reporter?.ClearText();
@@ -145,7 +150,7 @@ namespace Views
             Thread.Sleep(100);
             insertBtn.Enabled = true;
             canselBtn.Enabled = false;
-            progressBar.Visible = false;
+            _progressBar.Visible = false;
         }
 
         private void FormDialog_Load(object sender, EventArgs e)
